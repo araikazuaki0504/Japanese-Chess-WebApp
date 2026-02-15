@@ -26,16 +26,13 @@ export default function ShogiBoard() {
     } | null>(null);
     
     useEffect(() => {
-      useEffect(() => {
-      const es = new EventSource("/sse");
+      const es = new EventSource("http://localhost:3000/sse");
 
       es.onmessage = (e) => {
         const event: ReturnSSEMessage = JSON.parse(e.data);
         console.log("Received SSE:", event);
-    };
+      };
 
-    return () => es.close();
-  }, []);
     }, []);
 
   const handleCellClick = async (x: number, y: number) => {

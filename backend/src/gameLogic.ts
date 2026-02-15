@@ -1,4 +1,4 @@
-import { movePieceType } from "./types/gameLogic";
+import { movePieceType, ReturnMovePieceType } from "./types/gameLogic";
 
 import { initialBoard, PieceInstance } from "./const/initialBoard";
 
@@ -11,9 +11,9 @@ export class ShogiGame {
     this.turn = "Sente";
   }
 
-  movePiece(move: movePieceType) : boolean {
+  movePiece(move: movePieceType) : ReturnMovePieceType {
     console.log("Received move:", move);
-    return true;
+    return move;
   }
 
   getBoard() : typeof initialBoard {
