@@ -1,4 +1,4 @@
-import "../css/ShogiTable.css";
+import "./css/ShogiTable.css";
 
 export default function ShogiTable({ owner }: { owner: "myself" | "opponent" }) {
   return (

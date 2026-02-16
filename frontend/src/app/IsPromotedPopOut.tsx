@@ -1,6 +1,6 @@
-import "../css/IsPromotedPopOut.css";
+import "./css/IsPromotedPopOut.css";
 
-export function IsPromotedPopUp({promoted} : {promoted: (isPromoted : Boolean) => void}) {
+export function IsPromotedPopUp({promoted} : {promoted: (isPromoted : boolean) => void}) {
     return (
         <>
             <div className="promotion-overlay">

@@ -12,7 +12,7 @@ export class ShogiGame {
   }
 
   movePiece(move: movePieceType) : ReturnMovePieceType {
-    console.log("Received move:", move);
+    
     return move;
   }
 
