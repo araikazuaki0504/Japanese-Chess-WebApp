@@ -1,14 +1,14 @@
-import { useState } from "react";
-
 import { gameEventType }  from "../types/gameType";
 
-import { Blank } from "../const/piecesData";
+import { PiecesType } from "../types/piecesInfoType";
 import { initialBoard } from "../const/initialBoard";
+import { Blank } from "../const/piecesData";
 
 export class BoardManager {
     private static instance: BoardManager;
     private board : typeof initialBoard = initialBoard;
     private BOARD_SIZE: number = 9;
+    playerCode = 0;
 
     private constructor() {
         this.board = initialBoard;
@@ -33,27 +33,45 @@ export class BoardManager {
         this.board = board;
     }
 
-    applyBoardEvent(clientReducer: gameEventType, serverReducer: gameEventType) : void {
-        if (this.checkReducer(clientReducer, serverReducer)) {
-            const piece = this.board[clientReducer.from![1]][clientReducer.from![0]];
-            this.board[clientReducer.to![1]][clientReducer.to![0]] = piece;
-            this.board[clientReducer.from![1]][clientReducer.from![0]] = { def: Blank, owner: "None" };
+    IsApplyReducer(reducer: gameEventType) : boolean {
+        if (reducer.playerCode !== this.playerCode) {
+            const [ toX, toY ] = reducer.to;
+            const [ fromX, fromY ] = reducer.from!;
+
+            this.board[toY][toX] = { def : reducer.pieceData, owner : "Myself"};
+            this.board[fromY][fromX] = { def : Blank, owner : "None"};
+            
+            return true;
         }
+        if (reducer.type === "error") return false;
+
+        if (reducer.type === "move") {
+            const [ toX, toY ] = reducer.to;
+            const [ fromX, fromY ] = reducer.from!;
+
+            // 移動先の駒の情報が一致していないか
+            if (!this.checkPieceData(this.board[toY][toX].def,reducer.pieceData)) return false;
+
+            // 移動前の駒の情報が一致していないか
+            if (this.checkPieceData(this.board[fromY][fromX].def,Blank)) return false;
+
+            // 完全一致
+            return true;
+        }
+
+        return false;
     }
 
-    private checkReducer(clientReducer: gameEventType, serverReducer: gameEventType) : boolean {
+    private checkPieceData(clientPieceData : PiecesType, serverPieceData : PiecesType) : boolean {
+        // 成れるかが違う場合
+        if ( !(clientPieceData.toPromotedPieceCode && serverPieceData.toPromotedPieceCode) &&
+             !(!clientPieceData.toPromotedPieceCode && !serverPieceData.toPromotedPieceCode)) return false;
+        
         return (
-            clientReducer.type === serverReducer.type &&
-            clientReducer.playerCode === serverReducer.playerCode &&
-            clientReducer.pieceData === serverReducer.pieceData &&
-            (clientReducer.from && serverReducer.from ? clientReducer.from[0] === serverReducer.from[0] && clientReducer.from[1] === serverReducer.from[1] : true) &&
-            (clientReducer.to && serverReducer.to ? clientReducer.to[0] === serverReducer.to[0] && clientReducer.to[1] === serverReducer.to[1] : true)
+            clientPieceData.name === serverPieceData.name &&
+            clientPieceData.imagePath === serverPieceData.imagePath &&
+            clientPieceData.piecesCode === serverPieceData.piecesCode &&
+            JSON.stringify(clientPieceData.move) === JSON.stringify(serverPieceData.move)
         );
     }
-}
-
-export const useBoardUpdater = () => {
-    const [ board, setBoard ] = useState(initialBoard); 
-
-    return { board, setBoard };
 }

@@ -1,13 +1,11 @@
-export interface SSEMessage {
-    type: string;
-    SSEPayload: SSEPayload;
-}
+import { PiecesType } from "./piecesInfoType";
 
-export interface SSEPayload {
-    piecesCode: number;
-    owner: "Sente" | "Gote";
-    from: [number, number] | null;
-    to: [number, number];
+export interface SSEMessage {
+    type: "move" | "resign" | "error";
+    playerCode: number;
+    pieceData: PiecesType;
+    to : [number, number];
+    from? : [number, number];
 }
 
 export interface ReturnSSEMessage {

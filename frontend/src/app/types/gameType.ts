@@ -8,17 +8,17 @@ export interface initEventType {
 }
 
 export interface gameEventType {
-    type: "move" | "resign";
+    type: "move" | "resign" | "error";
     playerCode: number;
     pieceData: PiecesType;
+    to : [number, number];
     from? : [number, number];
-    to? : [number, number];
 }
 
 export interface movePieceInfoType {
     pieceData: PiecesType;
-    from : [number, number];
     to : [number, number];
+    from : [number, number];
 }
 
 export interface promotedPieceInfoType {

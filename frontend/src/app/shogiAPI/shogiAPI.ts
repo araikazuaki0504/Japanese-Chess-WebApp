@@ -1,8 +1,9 @@
 import { InitMessageType } from "../types/APIType"
 import { BoardManager } from "../game/boardManeger";
+import { SSEMessageType } from "../types/APIType";
 
 export function ShogiAPI() {
-    const initEvent = async (): Promise<InitMessageType> => {
+    const sendInitEvent = async (): Promise<InitMessageType> => {
         try {
             const res = await fetch("http://localhost:3000/init", {
             method: "POST",
@@ -24,6 +25,24 @@ export function ShogiAPI() {
         }
     };
 
+    const sendMoveEvent = async (sseMessage : SSEMessageType) => {
+        try {
+            const res = await fetch("http://localhost:3000/move", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(sseMessage)
+        });
 
-  return { initEvent };
+        if (!res.ok) {
+            throw new Error("通信エラー");
+        }
+
+        } catch (err) {
+            console.error(err);
+            throw err; // ← await した側にエラーを伝播
+        }
+    }
+
+
+  return { sendInitEvent, sendMoveEvent };
 }
