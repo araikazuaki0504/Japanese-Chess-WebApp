@@ -195,7 +195,7 @@ export const PROMOTED_FU : PiecesType = {
 }
 
 export const Blank : PiecesType = {
-    name: "",
+    name: "blank",
     piecesCode: 0,
     imagePath: "",
     move: [

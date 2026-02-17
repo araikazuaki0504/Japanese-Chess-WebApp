@@ -2,50 +2,42 @@ import { useState ,useEffect, useCallback } from "react";
 
 import { moveType } from "../types/piecesInfoType";
 import { movePieceInfoType, promotedPieceInfoType } from "../types/gameType";
-import { SSEMessageType, ReturnSSEMessage, initGameInfoType } from "../types/SSEType";
+import { ReturnSSEMessageType, SSEMessageType  } from "../types/APIType";
 
-import { BoardManager } from "../game/boardManeger";
+import { BoardManager, useBoardUpdater } from "../game/boardManeger";
 import { Blank, piecesData } from "../const/piecesData";
+import { ShogiAPI } from "../shogiService/shogiAPI";
 
 export function useShogiGame() {
-    const boardManager = BoardManager.getInstance();
-    const BOARD_SIZE = boardManager.getBoardSize();
-    const [currentBoard, setCurrentBoard] = useState(boardManager.getBoard());
+  const { initEvent } = ShogiAPI();
+  const boardManeger = BoardManager.getInstance();
+  const initBoard = boardManeger.getBoard();
+  const BOARD_SIZE = boardManeger.getBoardSize();
+  const [ currentBoard, setCurrentBoard ] = useState(initBoard);
 
-    useEffect(() => {
-        fetch("http://localhost:3000/init", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        })
-          .then((res) => {
-            if (!res.ok) throw new Error("通信エラー");
-            return res.json();
-          })
-          .then((data : initGameInfoType) => {
-            console.log("Initial board data:", data);
-            boardManager.setBoard(data.board);
-          })
-          .catch((err) => {
-            console.error("Error:", err);
-          });
-    },[]);
+  useEffect(() => {
+    const init = async() => {
+        const initData = await initEvent();
+        boardManeger.setBoard(initData.boardData);
+        setCurrentBoard([...initData.boardData]);
+    }
+    
+    init();
+    const es = new EventSource("http://localhost:3000/sse");
 
-    useEffect(() => {
-        const es = new EventSource("http://localhost:3000/sse");
+    es.onmessage = (e) => {
+      const event: ReturnSSEMessageType = JSON.parse(e.data);
+      //console.log("Received SSE:", event);
+    };
 
-        es.onmessage = (e) => {
-          const event: ReturnSSEMessage = JSON.parse(e.data);
-          //console.log("Received SSE:", event);
-        };
+    return () => es.close();
+  }, []);
 
-        return () => es.close();
-    }, []);
-
-    const movePiece = (movePieceInfo: movePieceInfoType) => {
+    const movePiece = (movePieceInfo: movePieceInfoType) : boolean => {
         const [fromX, fromY] = movePieceInfo.from;
         const [toX, toY] = movePieceInfo.to;
         const movePieceData = movePieceInfo.pieceData;
-        const board = boardManager.getBoard();
+        const board = boardManeger.getBoard();
             
         // 移動可能判定
         const canMove = movePieceData.move.some((move: moveType) => {
@@ -79,7 +71,7 @@ export function useShogiGame() {
 
         
         if (!canMove) {
-          return;
+          return false;
         }
         
         // 相手の駒がある場合は取る
@@ -95,8 +87,11 @@ export function useShogiGame() {
         // 移動
         board[toY][toX] = { def: movePieceData, owner: "Myself" };
         board[fromY][fromX] = { def: Blank, owner: "None" };
-        boardManager.setBoard(board);
+
+        boardManeger.setBoard(board);
         setCurrentBoard([...board]);
+
+        return true;
     };
 
     const promotedPiece = (promotedPieceInfo: promotedPieceInfoType) => {
@@ -104,13 +99,14 @@ export function useShogiGame() {
 
         const [x, y] = promotedPieceInfo.at;
         const promotedPieceData = promotedPieceInfo.pieceData;
-        const board = boardManager.getBoard();
+        const board = boardManeger.getBoard();
 
         const promotedPieceCode = promotedPieceData.toPromotedPieceCode!;
         const promotedPieceDef = piecesData.find(piece => piece.piecesCode === promotedPieceCode);
         
         board[y][x] = { def: promotedPieceDef!, owner: "Myself" };
-        boardManager.setBoard(board);
+
+        boardManeger.setBoard(board);
         setCurrentBoard([...board]);
     };
 

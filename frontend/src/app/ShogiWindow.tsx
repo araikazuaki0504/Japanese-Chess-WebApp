@@ -6,7 +6,7 @@ import { useShogiGame } from "./hooks/useShogiGame";
 import "./css/ShogiWindow.css";
 
 export default function ShogiWindow() {
-  const { currentBoard, movePiece, promotedPiece } = useShogiGame();
+  const { currentBoard ,movePiece, promotedPiece } = useShogiGame();
 
   return (
     <div className="shogi-root">

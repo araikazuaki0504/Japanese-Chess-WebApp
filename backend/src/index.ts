@@ -21,8 +21,9 @@ app.post("/init", (req: express.Request, res: express.Response) => {
   const clientBoard = mapBoardToClient(game.getBoard(),true);// いったんtrue
 
   res.json({
+    type: "init",
     playerCode: playerCode,
-    board: clientBoard,
+    boardData: clientBoard,
   });
     
 });

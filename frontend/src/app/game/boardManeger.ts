@@ -10,12 +10,13 @@ export class BoardManager {
     private board : typeof initialBoard = initialBoard;
     private BOARD_SIZE: number = 9;
 
-    private constructor() {}
+    private constructor() {
+        this.board = initialBoard;
+    }
 
     static getInstance(): BoardManager {
         if (!BoardManager.instance) {
             BoardManager.instance = new BoardManager();
-            BoardManager.instance.board = initialBoard;
         }
         return BoardManager.instance;
     }
@@ -34,9 +35,9 @@ export class BoardManager {
 
     applyBoardEvent(clientReducer: gameEventType, serverReducer: gameEventType) : void {
         if (this.checkReducer(clientReducer, serverReducer)) {
-            const piece = this.board[clientReducer.from[1]][clientReducer.from[0]];
-            this.board[clientReducer.to[1]][clientReducer.to[0]] = piece;
-            this.board[clientReducer.from[1]][clientReducer.from[0]] = { def: Blank, owner: "None" };
+            const piece = this.board[clientReducer.from![1]][clientReducer.from![0]];
+            this.board[clientReducer.to![1]][clientReducer.to![0]] = piece;
+            this.board[clientReducer.from![1]][clientReducer.from![0]] = { def: Blank, owner: "None" };
         }
     }
 
@@ -45,10 +46,14 @@ export class BoardManager {
             clientReducer.type === serverReducer.type &&
             clientReducer.playerCode === serverReducer.playerCode &&
             clientReducer.pieceData === serverReducer.pieceData &&
-            clientReducer.from[0] === serverReducer.from[0] &&
-            clientReducer.from[1] === serverReducer.from[1] &&
-            clientReducer.to[0] === serverReducer.to[0] &&
-            clientReducer.to[1] === serverReducer.to[1]
+            (clientReducer.from && serverReducer.from ? clientReducer.from[0] === serverReducer.from[0] && clientReducer.from[1] === serverReducer.from[1] : true) &&
+            (clientReducer.to && serverReducer.to ? clientReducer.to[0] === serverReducer.to[0] && clientReducer.to[1] === serverReducer.to[1] : true)
         );
     }
+}
+
+export const useBoardUpdater = () => {
+    const [ board, setBoard ] = useState(initialBoard); 
+
+    return { board, setBoard };
 }
