@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 
 import { movePieceInfoType, promotedPieceInfoType } from "./types/gameType";
 
@@ -11,7 +11,7 @@ import "./css/ShogiBoard.css";
 export default function ShogiBoard({ board, movePiece, promotedPiece } : { board: PieceInstance[][], movePiece: (movePieceInfo: movePieceInfoType) => void, promotedPiece: (promotedPieceInfo: promotedPieceInfoType) => void }) {
   const [canPromoted, setCanPromoted] = useState<boolean>(false);
 
-  const [PromotedCandidate, setPromotedCandidate] = useState<promotedPieceInfoType | null>(null);
+  const PromotedCandidate = useRef<promotedPieceInfoType | null>(null);
 
   const [selected, setSelected] = useState<{
       x: number;
@@ -45,12 +45,11 @@ export default function ShogiBoard({ board, movePiece, promotedPiece } : { board
     // 成り判定
     if ( y <= 2 && selected.piece.def.toPromotedPieceCode ) {
       setCanPromoted(true);
-      setPromotedCandidate({
+      PromotedCandidate.current = {
         pieceData: selected.piece.def,
         at: [x, y],
         isPromoted: false
-       });
-      return;
+       };
      }
 
     // 駒の移動
@@ -60,8 +59,6 @@ export default function ShogiBoard({ board, movePiece, promotedPiece } : { board
       to: [x, y]
     });
 
-    console.log(`Move piece from (${selected.x}, ${selected.y}) to (${x}, ${y})`);
-
     setSelected(null);
   };
 
@@ -70,18 +67,16 @@ export default function ShogiBoard({ board, movePiece, promotedPiece } : { board
       setCanPromoted(false);
       return;
     }
-
-    console.log(`promote_at:${PromotedCandidate?.at}`);
     
-    if (PromotedCandidate) {
+    if (PromotedCandidate.current) {
       promotedPiece({
-        ...PromotedCandidate,
+        ...PromotedCandidate.current,
         isPromoted: isPromoted
       });
     }
 
     setCanPromoted(false);
-    setPromotedCandidate(null);
+    PromotedCandidate.current = null;
   };
 
   return (      

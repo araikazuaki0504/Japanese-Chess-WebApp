@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 
 import { ShogiGame } from "./gameLogic";
+import { mapBoardToClient } from "./gameLogic_lib"
 import { SSEMessage } from "./types/SSEType";
 import { addClient, broadcast } from "./SSE";
 
@@ -11,6 +12,20 @@ const game = new ShogiGame();
 
 app.use(cors());
 app.use(express.json());
+
+// 初期盤面の取得
+app.post("/init", (req: express.Request, res: express.Response) => {
+  res.setHeader("Content-Type", "application/json");
+
+  const playerCode = Math.floor(Math.random() * 100) + 1;
+  const clientBoard = mapBoardToClient(game.getBoard(),true);// いったんtrue
+
+  res.json({
+    playerCode: playerCode,
+    board: clientBoard,
+  });
+    
+});
 
 /** SSE */
 app.get("/sse", (req: express.Request, res: express.Response) => {
@@ -24,7 +39,6 @@ app.get("/sse", (req: express.Request, res: express.Response) => {
   res.write(`data: ${JSON.stringify({
     type: "init",
     board: game.getBoard(),
-    turn: game.getTurn()
   })}\n\n`);
 });
 

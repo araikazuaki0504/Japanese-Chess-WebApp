@@ -2,7 +2,7 @@ import { useState ,useEffect, useCallback } from "react";
 
 import { moveType } from "../types/piecesInfoType";
 import { movePieceInfoType, promotedPieceInfoType } from "../types/gameType";
-import { SSEMessageType,ReturnSSEMessage } from "../types/SSEType";
+import { SSEMessageType, ReturnSSEMessage, initGameInfoType } from "../types/SSEType";
 
 import { BoardManager } from "../game/boardManeger";
 import { Blank, piecesData } from "../const/piecesData";
@@ -13,11 +13,29 @@ export function useShogiGame() {
     const [currentBoard, setCurrentBoard] = useState(boardManager.getBoard());
 
     useEffect(() => {
+        fetch("http://localhost:3000/init", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        })
+          .then((res) => {
+            if (!res.ok) throw new Error("通信エラー");
+            return res.json();
+          })
+          .then((data : initGameInfoType) => {
+            console.log("Initial board data:", data);
+            boardManager.setBoard(data.board);
+          })
+          .catch((err) => {
+            console.error("Error:", err);
+          });
+    },[]);
+
+    useEffect(() => {
         const es = new EventSource("http://localhost:3000/sse");
 
         es.onmessage = (e) => {
           const event: ReturnSSEMessage = JSON.parse(e.data);
-          console.log("Received SSE:", event);
+          //console.log("Received SSE:", event);
         };
 
         return () => es.close();
