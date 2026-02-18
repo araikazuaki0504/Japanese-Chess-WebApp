@@ -61,7 +61,7 @@ export function useShogiGame() {
     if (esRef.current) return; // ★ 二重防止
 
     const es = new EventSource(
-      "http://localhost:3001/sse",
+      "http://localhost:3000/sse",
       { withCredentials: true }
     );
 
@@ -76,43 +76,43 @@ export function useShogiGame() {
     };
   }, []);
 
-    const movePiece = useCallback((movePieceInfo: movePieceInfoType) : boolean => {
-        const canMove = ruleEngine.canMove(movePieceInfo);
+  const movePiece = useCallback((movePieceInfo: movePieceInfoType) : boolean => {
+      const canMove = ruleEngine.canMove(movePieceInfo);
 
-        if (!canMove) {
-          return false;
-        }
+      if (!canMove) {
+        return false;
+      }
         
-        // 相手の駒がある場合は取る
-        if (ruleEngine.canTakePiece(movePieceInfo)) {
+      // 相手の駒がある場合は取る
+      if (ruleEngine.canTakePiece(movePieceInfo)) {
           
-        }
+      }
 
-        // 移動
-        ruleEngine.movePiece(movePieceInfo);
-
-        // Boardを更新するか
-        if (ruleEngine.didUpdateBoard()) setCurrentBoard(ruleEngine.getBoard());
-
-        // サーバーへの通信
-        sendMoveEvent({
-          ...movePieceInfo,
-          type:"move",
-          playerCode: ruleEngine.playerCode 
-        });
-
-        return true;
-    },[]);
-
-    const promotedPiece = useCallback((promotedPieceInfo: promotedPieceInfoType) : void => {
-      // 成れるかの判定
-      if (!promotedPieceInfo.isPromoted) return;
-
-      ruleEngine.promotedPiece(promotedPieceInfo);
+      // 移動
+      ruleEngine.movePiece(movePieceInfo);
 
       // Boardを更新するか
       if (ruleEngine.didUpdateBoard()) setCurrentBoard(ruleEngine.getBoard());
-    },[]);
+
+      // サーバーへの通信
+      sendMoveEvent({
+        ...movePieceInfo,
+        type:"move",
+        playerCode: ruleEngine.playerCode 
+      });
+
+    return true;
+  },[]);
+
+  const promotedPiece = useCallback((promotedPieceInfo: promotedPieceInfoType) : void => {
+    // 成れるかの判定
+    if (!promotedPieceInfo.isPromoted) return;
+
+    ruleEngine.promotedPiece(promotedPieceInfo);
+
+    // Boardを更新するか
+    if (ruleEngine.didUpdateBoard()) setCurrentBoard(ruleEngine.getBoard());
+  },[]);
 
     return { currentBoard, movePiece, promotedPiece };
 }

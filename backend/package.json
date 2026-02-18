@@ -2,9 +2,7 @@
   "name": "backend",
   "scripts": {
     "build": "tsc",
-    "dev:api": "npx ts-node-dev src/api.ts",
-    "dev:sse": "npx ts-node-dev src/sse.ts",
-    "dev": "npx concurrently \"npm run dev:api\" \"npm run dev:sse\"",
+    "dev": "npx ts-node-dev src/index.ts",
     "start": "node dist/index.js"
   },
   "dependencies": {
