@@ -1,17 +1,25 @@
 import { useState ,useEffect, useCallback, useRef } from "react";
 
 import { initEventType, movePieceInfoType, promotedPieceInfoType } from "../types/gameType";
+import { PiecesType } from "../types/piecesInfoType";
 
 import { RuleEngine } from "../game/ruleEngine";
 import { ShogiAPI } from "../shogiAPI/shogiAPI";
 
 export function useShogiGame() {
-  const { sendInitEvent, sendMoveEvent } = ShogiAPI();
+  const { sendInitEvent, sendMoveEvent, sendPromotedEvent } = ShogiAPI();
+
   const esRef = useRef<EventSource | null>(null);
   const scheduledRef = useRef(false);
+
   const ruleEngine = RuleEngine.getInstance();
   const initBoard = ruleEngine.getBoard();
+
   const [ currentBoard, setCurrentBoard ] = useState(initBoard);
+  const [ capturedPiece, setCapturedPiece ] = 
+  useState<Map<Number,{pieceData : PiecesType, pieceCount : Number}>>(
+    new Map<Number,{pieceData : PiecesType, pieceCount : Number}>()
+  );
 
   // gameの初期化
   const initShogiService = async () : Promise<initEventType> => {
@@ -39,41 +47,22 @@ export function useShogiGame() {
   }
 
   useEffect(() => {
-    let mounted = true;
-
-    // init は 1 回だけ
+    // 初期化
     initShogiService().then((initData) => {
-      if (!mounted) return;
+      const es = new EventSource("http://localhost:3000/sse", { withCredentials: true });
 
-      setCurrentBoard(
-        RuleEngine.ligthBoardToBoard(initData.boardData)
-      );
+      setCurrentBoard(RuleEngine.ligthBoardToBoard(initData.boardData));
       ruleEngine.initSetBoard(initData.boardData);
       ruleEngine.playerCode = initData.playerCode;
+
+      es.onmessage = SSE_Handler;
+      es.onerror = SEE_ErrorHandler;
+
+      return () => {
+        es.close();
+        esRef.current = null;
+      };
     });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (esRef.current) return; // ★ 二重防止
-
-    const es = new EventSource(
-      "http://localhost:3000/sse",
-      { withCredentials: true }
-    );
-
-    es.onmessage = SSE_Handler;
-    es.onerror = SEE_ErrorHandler;
-
-    esRef.current = es;
-
-    return () => {
-      es.close();
-      esRef.current = null;
-    };
   }, []);
 
   const movePiece = useCallback((movePieceInfo: movePieceInfoType) : boolean => {
@@ -84,7 +73,7 @@ export function useShogiGame() {
       }
         
       // 相手の駒がある場合は取る
-      if (ruleEngine.canTakePiece(movePieceInfo)) {
+      if (ruleEngine.canCapturedPiece(movePieceInfo)) {
           
       }
 
@@ -112,7 +101,15 @@ export function useShogiGame() {
 
     // Boardを更新するか
     if (ruleEngine.didUpdateBoard()) setCurrentBoard(ruleEngine.getBoard());
+
+    // サーバーへの通信
+    sendPromotedEvent({
+      type : "promoted",
+      playerCode : ruleEngine.playerCode,
+      pieceData : promotedPieceInfo.pieceData,
+      to : promotedPieceInfo.at
+    });
   },[]);
 
-    return { currentBoard, movePiece, promotedPiece };
+    return { currentBoard, capturedPiece, movePiece, promotedPiece };
 }

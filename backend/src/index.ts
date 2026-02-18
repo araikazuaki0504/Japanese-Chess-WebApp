@@ -20,14 +20,6 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// CORS preflight
-app.options("/move", (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.sendStatus(204);
-});
-
 // 初期情報の取得
 app.post("/init", (req: express.Request, res: express.Response) => {
   res.setHeader("Content-Type", "application/json");
@@ -91,17 +83,19 @@ app.get("/sse", (req: express.Request, res: express.Response) => {
   
 });
 
-
 /** 移動 */
 app.post("/move", (req: express.Request, res: express.Response) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
   const requestData : SSEMessage = req.body;
 
   // const result = game.movePiece(requestData.SSEPayload);
-  
-  // if (!result) {
-  //   return res.status(400).json({ error: "invalid move" });
-  // }
+
+  sseManager.notifyOthers(requestData.playerCode,requestData);
+
+  return res.json({ ok: true });
+});
+
+app.post("/promoted", (req: express.Request, res: express.Response) => {
+  const requestData : SSEMessage = req.body;
 
   sseManager.notifyOthers(requestData.playerCode,requestData);
 

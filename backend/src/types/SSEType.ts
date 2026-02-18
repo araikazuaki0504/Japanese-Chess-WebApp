@@ -1,7 +1,7 @@
 import { PiecesType } from "./piecesInfoType";
 
 export interface SSEMessage {
-    type: "move" | "resign" | "error";
+    type: "move" | "resign" | "promoted" | "error";
     playerCode: number;
     pieceData: PiecesType;
     to : [number, number];

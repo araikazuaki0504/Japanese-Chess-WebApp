@@ -1,6 +1,5 @@
-import { gameEventType, movePieceInfoType, promotedPieceInfoType }  from "../types/gameType";
-import { moveType } from "../types/piecesInfoType";
-import { PiecesType } from "../types/piecesInfoType";
+import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType }  from "../types/gameType";
+import { moveType, PiecesType, capturedPieces } from "../types/piecesInfoType";
 
 import { initialBoard, PieceInstance, lightPieceInstance } from "../const/initialBoard";
 import { Blank,piecesData } from "../const/piecesData";
@@ -8,12 +7,14 @@ import { Blank,piecesData } from "../const/piecesData";
 export class RuleEngine {
     private static instance: RuleEngine;
     private board : ReadonlyArray<ReadonlyArray<PieceInstance>> = initialBoard;
+    private capturedPiecesList : ReadonlyArray<capturedPieces> = [];
     private BOARD_SIZE: number = 9;
     private didBoardUpdate = false;
     playerCode = 0;
 
     private constructor() {
         this.board = initialBoard;
+        
     }
 
     static getInstance(): RuleEngine {
@@ -102,6 +103,30 @@ export class RuleEngine {
         return newBoard;
     }
 
+    capturedPiece(capturedPieceInfo : capturedPieceInfoType) {
+        this.capturedPiecesList = 
+            this.capturedPiece_ApplyList(this.capturedPiecesList as capturedPieces[], capturedPieceInfo);
+    }
+
+    private capturedPiece_ApplyList(
+    capturedPiecesList : capturedPieces[], 
+    capturedPieceInfo : capturedPieceInfoType) : capturedPieces[] {
+        const capturedPieceData = capturedPieceInfo.pieceData;
+
+        const capturedPieceIndex = this.capturedPiecesList.findIndex(
+            capturedPieces => capturedPieces.pieceData.piecesCode === capturedPieceData.piecesCode
+        );
+
+        // リスト内に同一の持ち駒が存在しない場合
+        if (capturedPieceIndex === -1) {
+            return [...capturedPiecesList, {pieceData : capturedPieceInfo.pieceData, pieceCount : 1}];
+        } else { // 存在する場合
+            const newCapturedPeicesList = [...capturedPiecesList];
+            newCapturedPeicesList[capturedPieceIndex].pieceCount += 1;
+            return newCapturedPeicesList
+        }
+    }
+
     canMove(movePieceInfo: movePieceInfoType) : boolean {
         const [fromX, fromY] = movePieceInfo.from;
         const [toX, toY] = movePieceInfo.to;
@@ -147,7 +172,7 @@ export class RuleEngine {
         return toY <= 2 && movePieceData.toPromotedPieceCode !== undefined;
     }
 
-    canTakePiece(movePieceInfo: movePieceInfoType) : boolean{
+    canCapturedPiece(movePieceInfo: movePieceInfoType) : boolean{
         const [toX, toY] = movePieceInfo.to;
 
         return this.board[toY][toX].owner === "Opponent";
@@ -158,6 +183,16 @@ export class RuleEngine {
 
         if (reducer.type === "error") return;
 
+        // // 改ざん検知
+        // // 変化先が同じかどうか
+        // if (!this.checkPieceData(this.board[reducer.to[1]][reducer.to[0]].def,reducer.pieceData))return;
+
+        // // 変化元が同じかどうか
+        // if (reducer.from !== undefined &&
+        //     !this.checkPieceData(this.board[reducer.from[1]][reducer.from[0]].def,reducer.pieceData)
+        // )return;
+
+        // 移動
         if (reducer.type === "move") {
             const [ toX, toY ] = reducer.to;
             const [ fromX, fromY ] = reducer.from!;
@@ -171,6 +206,19 @@ export class RuleEngine {
             });
 
             if (this.board === oldBoard) this.didBoardUpdate = false;
+        }
+
+        // 成り
+        if (reducer.type === "promoted") {
+            const [ toX, toY ] = reducer.to;
+            const oldBoard = this.board;
+
+            // 新しい盤面へ
+            this.promotedPiece({
+                pieceData : reducer.pieceData,
+                at : reducer.to,
+                isPromoted : true
+            });
         }
     }
 

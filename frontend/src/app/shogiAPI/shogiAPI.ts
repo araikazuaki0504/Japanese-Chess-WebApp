@@ -24,7 +24,6 @@ export function ShogiAPI() {
     };
 
     const sendMoveEvent = async (sseMessage : SSEMessageType) => {
-        console.log(sseMessage);
         try {
             const res = await fetch("http://localhost:3000/move", {
             method: "POST",
@@ -43,6 +42,23 @@ export function ShogiAPI() {
         }
     }
 
+    const sendPromotedEvent = async (sseMessage : SSEMessageType) => {
+        try {
+            const res = await fetch("http://localhost:3000/move", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify(sseMessage)
+            });
 
-  return { sendInitEvent, sendMoveEvent };
+            if (!res.ok) {
+                throw new Error("通信エラー");
+            }
+        } catch (err) {
+            console.error(err);
+            throw err; // ← await した側にエラーを伝播
+        }
+    }
+
+  return { sendInitEvent, sendMoveEvent, sendPromotedEvent };
 }

@@ -8,7 +8,7 @@ export interface initEventType {
 }
 
 export interface gameEventType {
-    type: "move" | "resign" | "error";
+    type: "move" | "resign" | "promoted" | "error";
     playerCode: number;
     pieceData: PiecesType;
     to : [number, number];
@@ -25,4 +25,9 @@ export interface promotedPieceInfoType {
     pieceData: PiecesType;
     at : [number, number];
     isPromoted: boolean;
+}
+
+export interface capturedPieceInfoType {
+    pieceData: PiecesType;
+    at : [number, number];
 }
