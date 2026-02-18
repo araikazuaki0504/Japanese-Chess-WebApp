@@ -6,6 +6,11 @@ export interface PieceInstance {
     owner : "Sente" | "Gote" | "None";
 }
 
+export interface lightPieceInstance {
+    pieceCode : number;
+    owner : "Myself" | "Opponent" | "None";
+}
+
 export const initialBoard : PieceInstance[][] = [
     [{def: Kyosha, owner: "Sente"}, {def: Keima, owner: "Sente"}, {def: GinSho, owner: "Sente"}, {def: KinSho, owner: "Sente"}, {def: Osho, owner: "Sente"}, {def: KinSho, owner: "Sente"}, {def: GinSho, owner: "Sente"}, {def: Keima, owner: "Sente"}, {def: Kyosha, owner: "Sente"}],
     [{def: Blank, owner: "None"}, {def: Hisha, owner: "Sente"}, {def: Blank, owner: "None"}, {def: Blank, owner: "None"}, {def: Blank, owner: "None"}, {def: Blank, owner: "None"}, {def: Blank, owner: "None"}, {def: Kaku, owner: "Sente"}, {def: Blank, owner: "None"}],

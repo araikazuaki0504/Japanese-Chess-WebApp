@@ -1,136 +1,117 @@
-import { useState ,useEffect, useCallback } from "react";
+import { useState ,useEffect, useCallback, useRef } from "react";
 
-import { moveType } from "../types/piecesInfoType";
-import { gameEventType, initEventType, movePieceInfoType, promotedPieceInfoType } from "../types/gameType";
-import { ReturnSSEMessageType, SSEMessageType  } from "../types/APIType";
-import { PieceInstance } from "../const/initialBoard";
+import { initEventType, movePieceInfoType, promotedPieceInfoType } from "../types/gameType";
 
-import { BoardManager } from "../game/boardManeger";
-import { Blank, piecesData } from "../const/piecesData";
+import { RuleEngine } from "../game/ruleEngine";
 import { ShogiAPI } from "../shogiAPI/shogiAPI";
 
 export function useShogiGame() {
   const { sendInitEvent, sendMoveEvent } = ShogiAPI();
-  const boardManeger = BoardManager.getInstance();
-  const initBoard = boardManeger.getBoard();
-  const BOARD_SIZE = boardManeger.getBoardSize();
+  const esRef = useRef<EventSource | null>(null);
+  const scheduledRef = useRef(false);
+  const ruleEngine = RuleEngine.getInstance();
+  const initBoard = ruleEngine.getBoard();
   const [ currentBoard, setCurrentBoard ] = useState(initBoard);
- 
-  // セッター
-  const setBoard = (board : PieceInstance[][]) => {
-      setCurrentBoard([...board]);
-      boardManeger.setBoard(board);
-  }
 
   // gameの初期化
   const initShogiService = async () : Promise<initEventType> => {
         return await sendInitEvent();
   }
 
-  // SSEのハンドラ
-  const SSE_Handler = (message : MessageEvent) => {
-    console.log(message);
-    const boardManegaer = BoardManager.getInstance();
-    const gameEvent : gameEventType = JSON.parse(message.data);
-    const isUpdateBoard = boardManegaer.IsApplyReducer(gameEvent);
-    console.log(boardManeger.getBoard());
+  const SSE_Handler = (message: MessageEvent) => {
+    const gameEvent = JSON.parse(message.data);
+    ruleEngine.ApplyReducer(gameEvent);
 
-    if (isUpdateBoard) setCurrentBoard([...boardManeger.getBoard()]);
+    if (scheduledRef.current) return;
+
+    scheduledRef.current = true;
+    requestAnimationFrame(() => {
+      scheduledRef.current = false;
+      if (ruleEngine.didUpdateBoard()) {
+        setCurrentBoard(ruleEngine.getBoard());
+      }
+    });
+  };
+
+  // SSEのエラーハンドル
+  const SEE_ErrorHandler = (erroMessage : Event) => {
+    console.log(erroMessage);
   }
 
   useEffect(() => {
-    // gameの初期化
-    initShogiService().then((initData : initEventType) => {
-        setBoard(initData.boardData);
-        boardManeger.playerCode = initData.playerCode;
+    let mounted = true;
+
+    // init は 1 回だけ
+    initShogiService().then((initData) => {
+      if (!mounted) return;
+
+      setCurrentBoard(
+        RuleEngine.ligthBoardToBoard(initData.boardData)
+      );
+      ruleEngine.initSetBoard(initData.boardData);
+      ruleEngine.playerCode = initData.playerCode;
     });
 
-    // SSEの設定
-    const es = new EventSource("http://localhost:3000/clientAuth");
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (esRef.current) return; // ★ 二重防止
+
+    const es = new EventSource(
+      "http://localhost:3001/sse",
+      { withCredentials: true }
+    );
+
     es.onmessage = SSE_Handler;
-    return () => es.close();
+    es.onerror = SEE_ErrorHandler;
+
+    esRef.current = es;
+
+    return () => {
+      es.close();
+      esRef.current = null;
+    };
   }, []);
 
     const movePiece = useCallback((movePieceInfo: movePieceInfoType) : boolean => {
-        const [fromX, fromY] = movePieceInfo.from;
-        const [toX, toY] = movePieceInfo.to;
-        const movePieceData = movePieceInfo.pieceData;
-        const board = boardManeger.getBoard();
-            
-        // 移動可能判定
-        const canMove = movePieceData.move.some((move: moveType) => {
-              if (move.type === "step") return move.moveRange.some(([dx, dy]) => {
-                const targetX = fromX + dx;
-                const targetY = fromY + dy;
+        const canMove = ruleEngine.canMove(movePieceInfo);
 
-                if (targetX < 0 || targetX >= BOARD_SIZE || targetY < 0 || targetY >= BOARD_SIZE) return false; // ボード外
-                if (board[targetY][targetX].owner === "Myself") return false; // 自分の駒がある場合は移動できない
-        
-                return targetX === toX && targetY === toY
-            });
-            
-            if (move.type === "slide") return move.moveRange.some(([dx, dy]) => {
-                for (let i = 1; i < BOARD_SIZE; i++) {
-                  const targetX = fromX + dx * i;
-                  const targetY = fromY + dy * i;
-        
-                  if (targetX < 0 || targetX >= BOARD_SIZE || targetY < 0 || targetY >= BOARD_SIZE) break; // ボード外
-                  if (board[targetY][targetX].owner === "Myself") break; // 自分の駒がある場合は進めない
-                  // 相手の駒がある場合はそこまで進めるがそれ以上は進めない
-                  if (board[targetY][targetX].owner === "Opponent") {
-                    if (targetX === toX && targetY === toY) return true;
-                    break;
-                  } 
-                  if (targetX === toX && targetY === toY) return true;
-                }
-                return false;
-            });
-        });
-
-        
         if (!canMove) {
           return false;
         }
         
         // 相手の駒がある場合は取る
-        if (board[toY][toX].owner === "Opponent") {
+        if (ruleEngine.canTakePiece(movePieceInfo)) {
           
         }
-        
-        // 成り判定
-        if ( toY <= 2 && movePieceData.toPromotedPieceCode ) {
 
-        }
-        
         // 移動
-        board[toY][toX] = { def: movePieceData, owner: "Myself" };
-        board[fromY][fromX] = { def: Blank, owner: "None" };
+        ruleEngine.movePiece(movePieceInfo);
 
-        setBoard(board);
+        // Boardを更新するか
+        if (ruleEngine.didUpdateBoard()) setCurrentBoard(ruleEngine.getBoard());
 
-        // サーバーへ送信
+        // サーバーへの通信
         sendMoveEvent({
           ...movePieceInfo,
           type:"move",
-          playerCode: boardManeger.playerCode 
+          playerCode: ruleEngine.playerCode 
         });
 
         return true;
     },[]);
 
-    const promotedPiece = useCallback((promotedPieceInfo: promotedPieceInfoType) => {
+    const promotedPiece = useCallback((promotedPieceInfo: promotedPieceInfoType) : void => {
+      // 成れるかの判定
       if (!promotedPieceInfo.isPromoted) return;
 
-        const [x, y] = promotedPieceInfo.at;
-        const promotedPieceData = promotedPieceInfo.pieceData;
-        const board = boardManeger.getBoard();
+      ruleEngine.promotedPiece(promotedPieceInfo);
 
-        const promotedPieceCode = promotedPieceData.toPromotedPieceCode!;
-        const promotedPieceDef = piecesData.find(piece => piece.piecesCode === promotedPieceCode);
-        
-        board[y][x] = { def: promotedPieceDef!, owner: "Myself" };
-
-        setBoard(board);
+      // Boardを更新するか
+      if (ruleEngine.didUpdateBoard()) setCurrentBoard(ruleEngine.getBoard());
     },[]);
 
     return { currentBoard, movePiece, promotedPiece };

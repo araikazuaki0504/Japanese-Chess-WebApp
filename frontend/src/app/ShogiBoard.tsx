@@ -8,7 +8,7 @@ import { IsPromotedPopUp } from "./IsPromotedPopOut";
 
 import "./css/ShogiBoard.css";
 
-export default function ShogiBoard({ board, movePiece, promotedPiece } : { board: PieceInstance[][], movePiece: (movePieceInfo: movePieceInfoType) => boolean, promotedPiece: (promotedPieceInfo: promotedPieceInfoType) => void }) {
+export default function ShogiBoard({ board, movePiece, promotedPiece } : { board: ReadonlyArray<ReadonlyArray<PieceInstance>>, movePiece: (movePieceInfo: movePieceInfoType) => boolean, promotedPiece: (promotedPieceInfo: promotedPieceInfoType) => void }) {
   const [canPromoted, setCanPromoted] = useState<boolean>(false);
 
   const PromotedCandidate = useRef<promotedPieceInfoType | null>(null);

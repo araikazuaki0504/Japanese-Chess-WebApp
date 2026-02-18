@@ -1,10 +1,10 @@
 import { PiecesType } from "./piecesInfoType";
-import { PieceInstance } from "../const/initialBoard"
+import { PieceInstance, lightPieceInstance } from "../const/initialBoard"
 
 export interface initEventType {
     type : "init";
     playerCode : number;
-    boardData: PieceInstance[][];
+    boardData : lightPieceInstance[][];
 }
 
 export interface gameEventType {

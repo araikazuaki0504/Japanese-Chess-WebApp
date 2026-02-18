@@ -1,22 +1,20 @@
 import { InitMessageType } from "../types/APIType"
-import { BoardManager } from "../game/boardManeger";
 import { SSEMessageType } from "../types/APIType";
 
 export function ShogiAPI() {
     const sendInitEvent = async (): Promise<InitMessageType> => {
         try {
             const res = await fetch("http://localhost:3000/init", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include"
             });
 
             if (!res.ok) {
-            throw new Error("通信エラー");
+                throw new Error("通信エラー");
             }
 
             const data: InitMessageType = await res.json();
-            
-            BoardManager.getInstance().setBoard(data.boardData);
 
             return data; // ← 呼び出し側で「待てる」
         } catch (err) {
@@ -26,10 +24,12 @@ export function ShogiAPI() {
     };
 
     const sendMoveEvent = async (sseMessage : SSEMessageType) => {
+        console.log(sseMessage);
         try {
             const res = await fetch("http://localhost:3000/move", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            credentials: "include",
             body: JSON.stringify(sseMessage)
         });
 

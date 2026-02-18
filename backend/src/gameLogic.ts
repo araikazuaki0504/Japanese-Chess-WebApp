@@ -11,9 +11,8 @@ export class ShogiGame {
     this.turn = "Sente";
   }
 
-  movePiece(move: movePieceType) : ReturnMovePieceType {
+  movePiece(move: movePieceType) {
     
-    return move;
   }
 
   getBoard() : typeof initialBoard {
