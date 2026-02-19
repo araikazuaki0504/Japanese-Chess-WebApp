@@ -10,8 +10,3 @@ export interface PiecesType {
     move: moveType[];
     toPromotedPieceCode?: number;
 }
-
-export interface capturedPieces {
-    pieceData : PiecesType, 
-    pieceCount : number
-}

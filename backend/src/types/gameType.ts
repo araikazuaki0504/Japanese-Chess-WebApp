@@ -1,4 +1,5 @@
 import { PiecesType } from "./piecesInfoType";
+import { gameEventMessage, ReturngameEventMessage } from "./APIType";
 
 export interface gameEventType {
     type: "move" | "promoted" | "captured" | "resign" | "error";
@@ -8,42 +9,26 @@ export interface gameEventType {
     from? : [number, number];
 }
 
-export interface gameEventResultType {
-    type: "move" | "promoted" | "captured" | "resign" | "error";
-    userCode: number;
-    pieceData: PiecesType;
-    to? : [number, number];
-    from? : [number, number];
-    result: boolean;
-}
-
 export interface movePieceInfoType {
     pieceData: PiecesType;
     to : [number, number];
-    owner : "Myself" | "Opponent";
     from : [number, number];
 }
 
 export interface promotedPieceInfoType {
     pieceData: PiecesType;
     at : [number, number];
-    owner : "Myself" | "Opponent";
-    isPromoted: boolean;
 }
 
 export interface capturedPieceInfoType {
     pieceData: PiecesType;
-    owner : "Myself" | "Opponent";
     at : [number, number];
-}
-
-export interface capturedPieces {
-    pieceData : PiecesType, 
-    pieceCount : number
 }
 
 export interface resignedPieceInfoType {
     pieceData: PiecesType;
-    owner : "Myself" | "Opponent";
     at : [number, number];
 }
+
+export type gameEvent = gameEventMessage;
+export type ReturnGameEvent = ReturngameEventMessage;

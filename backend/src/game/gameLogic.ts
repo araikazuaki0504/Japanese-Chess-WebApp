@@ -1,4 +1,4 @@
-import { PieceInstance, lightPieceInstance } from "./const/initialBoard";
+import { PieceInstance, lightPieceInstance } from "../const/initialBoard";
 
 const convertMap_sente : Record< "Sente" | "Gote" | "None", "Myself" | "Opponent" | "None" > = { "Sente" : "Myself", "Gote" : "Opponent", "None" : "None" };
 const convertMap_gote : Record< "Sente" | "Gote" | "None", "Myself" | "Opponent" | "None" > = { "Sente" : "Opponent", "Gote" : "Myself", "None" : "None" };

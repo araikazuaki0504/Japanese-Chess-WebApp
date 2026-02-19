@@ -3,10 +3,15 @@
   min-height: 180px;
   border: 3px solid #333;
   background-color: #e8c98b;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
   padding: 8px;
+
+  justify-items: start;
+  align-items: start;
+  align-content: start;
 }
 
 .komadai.myself {
@@ -17,4 +22,54 @@
 .komadai.opponent {
   align-self: flex-start;
   margin-top: 5%;
+}
+
+.piece {
+  position: relative;
+  display: inline-block;
+}
+
+.piece img {
+  width: 48px;
+  height: auto;
+  display: block;
+}
+
+.piece::after {
+  content: attr(data-count);
+
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
+
+  background: #000;
+  color: #fff;
+
+  font-size: 12px;
+  font-weight: bold;
+
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+
+  line-height: 20px;
+  text-align: center;
+  border-radius: 999px;
+}
+
+.piece[data-count="0"]::after {
+  display: none;
+}
+
+.piece.selected {
+  background-color: rgba(255, 7, 7, 0.6); /* 将棋っぽい黄色 */
+}
+
+.komadai.myself img {
+  transform: rotate(0deg);
+}
+
+.komadai.opponent img {
+  transform: rotate(180deg);
 }

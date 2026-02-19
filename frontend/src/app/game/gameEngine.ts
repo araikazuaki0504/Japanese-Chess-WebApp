@@ -1,27 +1,35 @@
-import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType }  from "../types/gameType";
-import { moveType, PiecesType, capturedPieces } from "../types/piecesInfoType";
+import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType, capturedPieces, resignedPieceInfoType }  from "../types/gameType";
+import { moveType, PiecesType } from "../types/piecesInfoType";
 
 import { initialBoard, PieceInstance, lightPieceInstance } from "../const/initialBoard";
 import { Blank,piecesData } from "../const/piecesData";
 
-export class RuleEngine {
-    private static instance: RuleEngine;
+export class GameEngine {
+    private static instance: GameEngine;
     private board : ReadonlyArray<ReadonlyArray<PieceInstance>> = initialBoard;
-    private capturedPiecesList : ReadonlyArray<capturedPieces> = [];
+    private myselfcapturedPiecesList : ReadonlyArray<capturedPieces> = [];
+    private opponentcapturedPiecesList : ReadonlyArray<capturedPieces> = [];
     private BOARD_SIZE: number = 9;
-    private didBoardUpdate = false;
-    playerCode = 0;
+    private didBoardUpdate : boolean = false;
+    private didMyselfCapturedListUpdate : boolean = false;
+    private didOpponentCapturedListUpdate : boolean = false;
+    private userType : "Sente" | "Gote" | "Spectator" = "Spectator";
+    userCode = 0;
 
     private constructor() {
         this.board = initialBoard;
         
     }
 
-    static getInstance(): RuleEngine {
-        if (!RuleEngine.instance) {
-            RuleEngine.instance = new RuleEngine();
+    static getInstance(): GameEngine {
+        if (!GameEngine.instance) {
+            GameEngine.instance = new GameEngine();
         }
-        return RuleEngine.instance;
+        return GameEngine.instance;
+    }
+
+    getuserType() : "Sente" | "Gote" | "Spectator" {
+        return this.userType;
     }
 
     getBoardSize() : number {
@@ -30,6 +38,19 @@ export class RuleEngine {
 
     getBoard() : ReadonlyArray<ReadonlyArray<PieceInstance>> {
         return this.board;
+    }
+
+    getCapturedPieceData(at : [number,number]) : PiecesType {
+        const [x,y] = at;
+        return this.board[y][x].def;
+    }
+
+    getMyselfCapturedList() : ReadonlyArray<capturedPieces> {
+        return this.myselfcapturedPiecesList;
+    }
+
+    getOpponentCapturedList() : ReadonlyArray<capturedPieces> {
+        return this.opponentcapturedPiecesList;
     }
 
     initSetBoard(lightBoard : lightPieceInstance[][]) {
@@ -52,8 +73,24 @@ export class RuleEngine {
         );
     }
 
+    setuserType(userType : "Sente" | "Gote" | "Spectator") {
+        this.userType = userType;
+    }
+
     setBoard(board: typeof initialBoard) : void {
         this.board = board;
+    }
+
+    didUpdateMyselfCapturedList() : boolean {
+        const result = this.didMyselfCapturedListUpdate;
+        this.didMyselfCapturedListUpdate = false;
+        return result;
+    }
+
+    didUpdateOpponentCapturedList() : boolean {
+        const result = this.didOpponentCapturedListUpdate;
+        this.didOpponentCapturedListUpdate = false;
+        return result;
     }
 
     didUpdateBoard() : boolean {
@@ -75,11 +112,12 @@ export class RuleEngine {
         const [fromX, fromY] = movePieceInfo.from;
         const [toX, toY] = movePieceInfo.to;
         const movePieceData = movePieceInfo.pieceData;
+        const owner = movePieceInfo.owner;
 
         const newBoard = this.updateBoard(board);
         
         // 移動
-        newBoard[toY][toX] = { def: movePieceData, owner: "Myself" };
+        newBoard[toY][toX] = { def: movePieceData, owner: owner };
         newBoard[fromY][fromX] = { def: Blank, owner: "None" };
 
         return newBoard;
@@ -92,20 +130,28 @@ export class RuleEngine {
     private promotedPiece_ApplyBoard(board :PieceInstance[][], promotedPieceInfo : promotedPieceInfoType) : PieceInstance[][] {
         const [x, y] = promotedPieceInfo.at;
         const promotedPieceData = promotedPieceInfo.pieceData;
+        const owner = promotedPieceInfo.owner;
 
         const promotedPieceCode = promotedPieceData.toPromotedPieceCode!;
         const promotedPieceDef = piecesData.find(piece => piece.piecesCode === promotedPieceCode);
 
         const newBoard = this.updateBoard(board);
         
-        newBoard[y][x] = { def: promotedPieceDef!, owner: "Myself" };
+        newBoard[y][x] = { def: promotedPieceDef!, owner: owner};
 
         return newBoard;
     }
 
-    capturedPiece(capturedPieceInfo : capturedPieceInfoType) {
-        this.capturedPiecesList = 
-            this.capturedPiece_ApplyList(this.capturedPiecesList as capturedPieces[], capturedPieceInfo);
+    myselfCapturedPiece(capturedPieceInfo : capturedPieceInfoType) : void {
+        this.myselfcapturedPiecesList = 
+            this.capturedPiece_ApplyList(this.myselfcapturedPiecesList as capturedPieces[], capturedPieceInfo);
+        this.didMyselfCapturedListUpdate = true;
+    }
+
+    opponentCapturedPiece(capturedPieceInfo : capturedPieceInfoType) : void {
+        this.opponentcapturedPiecesList =
+            this.capturedPiece_ApplyList(this.opponentcapturedPiecesList as capturedPieces[], capturedPieceInfo);
+        this.didOpponentCapturedListUpdate = true;
     }
 
     private capturedPiece_ApplyList(
@@ -113,7 +159,7 @@ export class RuleEngine {
     capturedPieceInfo : capturedPieceInfoType) : capturedPieces[] {
         const capturedPieceData = capturedPieceInfo.pieceData;
 
-        const capturedPieceIndex = this.capturedPiecesList.findIndex(
+        const capturedPieceIndex = capturedPiecesList.findIndex(
             capturedPieces => capturedPieces.pieceData.piecesCode === capturedPieceData.piecesCode
         );
 
@@ -124,6 +170,51 @@ export class RuleEngine {
             const newCapturedPeicesList = [...capturedPiecesList];
             newCapturedPeicesList[capturedPieceIndex].pieceCount += 1;
             return newCapturedPeicesList
+        }
+    }
+
+    resignedPiece(resignedPieceInfo: resignedPieceInfoType) : void {
+        this.board = this.resignedPiece_ApplyBoard(this.board as PieceInstance[][], resignedPieceInfo);
+
+        if (resignedPieceInfo.owner === "Myself") {
+            this.myselfcapturedPiecesList =
+             this.resignedPiece_ApplyList(this.myselfcapturedPiecesList as capturedPieces[], resignedPieceInfo);
+            this.didMyselfCapturedListUpdate = true;
+        } else {
+            this.opponentcapturedPiecesList = 
+             this.resignedPiece_ApplyList(this.opponentcapturedPiecesList as capturedPieces[], resignedPieceInfo);
+            this.didOpponentCapturedListUpdate = true;
+        }
+    }
+
+    private resignedPiece_ApplyBoard(board :PieceInstance[][], resignedPieceInfo: resignedPieceInfoType) : PieceInstance[][] {
+        const [x, y] = resignedPieceInfo.at;
+        const promotedPieceData = resignedPieceInfo.pieceData;
+        const owner = resignedPieceInfo.owner;
+
+        const newBoard = this.updateBoard(board);
+        
+        newBoard[y][x] = { def: promotedPieceData, owner: owner};
+
+        return newBoard;   
+    }
+
+    private resignedPiece_ApplyList(
+    capturedPiecesList : capturedPieces[],  
+    resignedPieceInfo: resignedPieceInfoType) : capturedPieces[] {
+        const capturedPieceData = resignedPieceInfo.pieceData;
+
+        const capturedPieceIndex = capturedPiecesList.findIndex(
+            capturedPiecesList => capturedPiecesList.pieceData.piecesCode === capturedPieceData.piecesCode
+        );
+
+        // リスト内に同一の持ち駒が存在しない場合
+        if (capturedPieceIndex === -1) {
+            return [];
+        } else { // 存在する場合
+            const newCapturedPeicesList = [...capturedPiecesList];
+            newCapturedPeicesList[capturedPieceIndex].pieceCount -= 1;
+            return newCapturedPeicesList.filter((capturedPiece : capturedPieces) => capturedPiece.pieceCount > 0);
         }
     }
 
@@ -178,47 +269,74 @@ export class RuleEngine {
         return this.board[toY][toX].owner === "Opponent";
     }
 
+    canResignedPiece(resignedPieceInfo: resignedPieceInfoType) : boolean {
+        const [toX, toY] = resignedPieceInfo.at;
+
+        return this.checkPieceData(this.board[toY][toX].def, Blank);
+    }
+
     ApplyReducer(reducer: gameEventType) : void {
-        if (reducer.playerCode === this.playerCode) return;
+        if (reducer.userCode === this.userCode) return;
 
         if (reducer.type === "error") return;
 
-        // // 改ざん検知
-        // // 変化先が同じかどうか
-        // if (!this.checkPieceData(this.board[reducer.to[1]][reducer.to[0]].def,reducer.pieceData))return;
-
-        // // 変化元が同じかどうか
-        // if (reducer.from !== undefined &&
-        //     !this.checkPieceData(this.board[reducer.from[1]][reducer.from[0]].def,reducer.pieceData)
-        // )return;
-
         // 移動
-        if (reducer.type === "move") {
-            const [ toX, toY ] = reducer.to;
-            const [ fromX, fromY ] = reducer.from!;
+        if (reducer.type === "move" && reducer.to !== undefined && reducer.from !== undefined) {
             const oldBoard = this.board;
 
             // 新しい盤面へ
             this.movePiece({
                 pieceData : reducer.pieceData,
-                to : reducer.to,
-                from : reducer.from!
+                owner : "Opponent",
+                to : this.coordinateRotate180(reducer.to),
+                from : this.coordinateRotate180(reducer.from)
             });
 
             if (this.board === oldBoard) this.didBoardUpdate = false;
         }
 
         // 成り
-        if (reducer.type === "promoted") {
-            const [ toX, toY ] = reducer.to;
+        if (reducer.type === "promoted" && reducer.to !== undefined) {
             const oldBoard = this.board;
 
             // 新しい盤面へ
             this.promotedPiece({
                 pieceData : reducer.pieceData,
-                at : reducer.to,
+                owner : "Opponent",
+                at : this.coordinateRotate180(reducer.to),
                 isPromoted : true
             });
+
+            if (this.board === oldBoard) this.didBoardUpdate = false;
+        }
+
+        // 駒の取得
+         if (reducer.type === "captured" && reducer.from !== undefined) {
+            const oldOpponentCapturedList = this.opponentcapturedPiecesList;
+
+            // 新しい相手の持ち駒リストへ
+            this.opponentCapturedPiece({
+                pieceData : reducer.pieceData,
+                owner : "Opponent",
+                at : this.coordinateRotate180(reducer.from)
+            });
+
+            if (this.opponentcapturedPiecesList === oldOpponentCapturedList) this.didOpponentCapturedListUpdate = false;
+        }
+
+        // 駒を置く
+        if (reducer.type === "resign" && reducer.to !== undefined) {
+            const oldBoard = this.board;
+            const oldOpponentCapturedList = this.opponentcapturedPiecesList;
+
+            this.resignedPiece({
+                pieceData : reducer.pieceData,
+                owner : "Opponent",
+                at : this.coordinateRotate180(reducer.to)
+            });
+
+            if (this.board === oldBoard) this.didBoardUpdate = false;
+            if (this.opponentcapturedPiecesList === oldOpponentCapturedList) this.didOpponentCapturedListUpdate = false;
         }
     }
 
@@ -233,5 +351,12 @@ export class RuleEngine {
             clientPieceData.piecesCode === serverPieceData.piecesCode &&
             JSON.stringify(clientPieceData.move) === JSON.stringify(serverPieceData.move)
         );
+    }
+
+    private coordinateRotate180(coordinate : [number,number]) : [number,number] {
+        const [x,y] = coordinate;
+        
+        if (this.userType === "Sente") return [8 - x, 8 - y];
+        else return coordinate;
     }
 }

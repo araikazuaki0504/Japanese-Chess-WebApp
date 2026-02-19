@@ -1,15 +1,18 @@
 import express from "express";
 import cors from "cors";
 
-import { SSEMessage } from "./types/SSEType";
+import { gameEventMessage } from "./types/APIType";
+import { InitMessageType } from "./types/APIType";
 
-import { ShogiGame } from "./gameLogic";
+import { GameEngine } from "./game/gameEngine";
 import { SSEManager } from "./SSE/SSEManager";
-import { mapBoardToClient } from "./gameLogic_lib"
+import { UserManager } from "./game/UserManager";
+import { mapBoardToClient } from "./game/gameLogic"
 
 const app = express();
-const game = new ShogiGame();
+const gameEngine = new GameEngine();
 const sseManager = SSEManager.getInstance();
+const userManager = UserManager.getInstance();
 const cookieParser = require('cookie-parser')
 
 app.use(cors({
@@ -24,44 +27,54 @@ app.use(cookieParser());
 app.post("/init", (req: express.Request, res: express.Response) => {
   res.setHeader("Content-Type", "application/json");
 
-  let playerID = req.cookies.playerID;
+  let userID = req.cookies.userID;
 
-  if (!playerID) {
+  if (!userID) {
     // Cookie が無ければ新規生成
-    playerID = sseManager.generatePlayerId();
-    res.cookie("playerID", playerID, {
+    userID = sseManager.generateuserId();
+    res.cookie("userID", userID, {
       maxAge: 1000 * 60 * 60,
       httpOnly: false,
       sameSite: "lax",
       secure: false
     });
-    console.log("Init: new playerID set:", playerID);
+    console.log("Init: new userID set:", userID);
   } else {
-    res.cookie("playerID", playerID, {
+    res.cookie("userID", userID, {
       maxAge: 1000 * 60 * 60,
       httpOnly: false,
       sameSite: "lax",
       secure: false
     });
-    console.log("Init: existing playerID:", playerID);
+    console.log("Init: existing userID:", userID);
   }
 
-  const clientBoard = mapBoardToClient(game.getBoard(),true);// いったんtrue
+  const initMessage : InitMessageType = req.body;
+  const isRotation : boolean = initMessage.userType === "Sente";
+
+  const clientBoard = mapBoardToClient(gameEngine.getBoard(),isRotation);
+
+  userManager.addUser(initMessage.userType,userID);
 
   res.json({
     type: "init",
-    playerCode: playerID,
+    userCode: userID,
     boardData: clientBoard,
   });
     
 });
 
+// リセット
+app.post("/reset", (req: express.Request, res: express.Response) => {
+  
+});
+
 /** SSE */
 app.get("/sse", (req: express.Request, res: express.Response) => {
-  const playerID = req.cookies.playerID;
-  console.log("Client Auth connect", playerID);
+  const userID = req.cookies.userID;
+  console.log("Client Auth connect", userID);
 
-  if (!playerID) {
+  if (!userID) {
     res.sendStatus(401);
     return;
   }
@@ -70,36 +83,38 @@ app.get("/sse", (req: express.Request, res: express.Response) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  // playerID を使って登録
-  sseManager.addClient(playerID, res);
+  // userID を使って登録
+  sseManager.addClient(userID, res);
 
   res.write("data: connected\n\n");
 
   // クライアントが切断したら clients から削除
   req.on("close", () => {
-    sseManager.removeClient(playerID);
+    sseManager.removeClient(userID);
+    userManager.removeUserWithUserID(userID);
     console.log("Client disconnected, removed from clients");
   });
   
 });
 
-/** 移動 */
-app.post("/move", (req: express.Request, res: express.Response) => {
-  const requestData : SSEMessage = req.body;
+app.post("/gameEvent", (req: express.Request, res: express.Response) => {
+  const gameEvent : gameEventMessage = req.body;
 
-  // const result = game.movePiece(requestData.SSEPayload);
+  const UserType = userManager.getUserType(gameEvent.userCode);
+  const convertedGameEvent = GameEngine.convertServerCoordinate(gameEvent,UserType as "Sente" | "Gote");
 
-  sseManager.notifyOthers(requestData.playerCode,requestData);
+  const result = gameEngine.validation(convertedGameEvent);
 
-  return res.json({ ok: true });
-});
+  console.log("gameEvent");
+  console.log("result:",result);
+  console.log(convertedGameEvent);
 
-app.post("/promoted", (req: express.Request, res: express.Response) => {
-  const requestData : SSEMessage = req.body;
+  if (result) { 
+    sseManager.notifyOthers(convertedGameEvent.userCode,convertedGameEvent);
+    gameEngine.ApplyReducer(convertedGameEvent);
+  };
 
-  sseManager.notifyOthers(requestData.playerCode,requestData);
-
-  return res.json({ ok: true });
+  return res.json({ result: result });
 });
 
 app.listen(3000, () => {

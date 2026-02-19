@@ -1,20 +1,22 @@
 import express from "express";
 
+import { SSEMessage } from "../types/SSEType";
+
 export interface client {
-  playerID : number;
+  userID : number;
   res : express.Response;
 }
 
 export interface session {
   sessionID : string;
-  playerID : number;
+  userID : number;
 }
 
 export class SSEManager {
   private static instance : SSEManager;
   private clients = new Map<number,express.Response>();
   private sessions = new Array<session>();
-  private playerCounter = 0;
+  private userCounter = 0;
 
   private constructor() {}
 
@@ -25,9 +27,9 @@ export class SSEManager {
     return SSEManager.instance;
   }
 
-  generatePlayerId () : number{
-    this.playerCounter += 1;
-    return this.playerCounter;
+  generateuserId () : number{
+    this.userCounter += 1;
+    return this.userCounter;
   }
 
   getClientCount() : number {
@@ -38,22 +40,22 @@ export class SSEManager {
     return this.sessions.find((session : session) => session.sessionID === sessionID);
   }
 
-  addClient (playerID : number, res : express.Response){
-    this.clients.set(playerID,res);
+  addClient (userID : number, res : express.Response){
+    this.clients.set(userID,res);
   }
 
-  removeClient (playerID : number) : void  {
-    this.clients.delete(playerID);
+  removeClient (userID : number) : void  {
+    this.clients.delete(userID);
   }
 
-  addSession (sessionID : string, playerID : number) {
+  addSession (sessionID : string, userID : number) {
     this.sessions.push({
       sessionID : sessionID,
-      playerID : playerID
+      userID : userID
     });
   }
 
-  notifyAll (data : unknown) : boolean {
+  notifyAll (data : SSEMessage) : boolean {
     if (this.clients.size === 0) return false;
 
     this.clients.forEach((client : express.Response) => {
@@ -63,26 +65,26 @@ export class SSEManager {
     return true;
   }
 
-  notifyOne (playerID : number, data : unknown) : boolean {
-    const client = this.clients.get(playerID);
+  notifyOne (userID : number, data : SSEMessage) : boolean {
+    const client = this.clients.get(userID);
     if (!client) return false;
 
     client.write(`data: ${JSON.stringify(data)}\n\n`);
     return true;
   }
 
-  notifyOthers (targetPlayerID : number, data : unknown) : boolean {
+  notifyOthers (targetuserID : number, data : SSEMessage) : boolean {
     if (this.clients.size === 0) return false;
 
 
-    this.clients.forEach((res : express.Response, playerID : number) => {
-      if (playerID === targetPlayerID) return;
+    this.clients.forEach((res : express.Response, userID : number) => {
+      if (userID === targetuserID) return;
       const result = res.write(`data: ${JSON.stringify(data)}\n\n`);
 
         if (!result) {
           console.warn("slow or dead client dropped");
           res.end();
-          this.clients.delete(playerID);
+          this.clients.delete(userID);
       }
     });
 

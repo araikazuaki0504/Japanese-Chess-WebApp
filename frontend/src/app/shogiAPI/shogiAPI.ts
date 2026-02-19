@@ -1,40 +1,39 @@
-import { InitMessageType } from "../types/APIType"
-import { SSEMessageType } from "../types/APIType";
+import { gameEventMessageType, ReturnGameEventMessageType , InitMessageType, RetutrnInitMessageType } from "../types/APIType"
 
 export function ShogiAPI() {
-    const sendInitEvent = async (): Promise<InitMessageType> => {
+    const sendInitEvent = async (initMessageType : InitMessageType): Promise<RetutrnInitMessageType> => {
         try {
             const res = await fetch("http://localhost:3000/init", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                credentials: "include"
+                credentials: "include",
+                body: JSON.stringify(initMessageType)
             });
 
             if (!res.ok) {
                 throw new Error("通信エラー");
             }
 
-            const data: InitMessageType = await res.json();
+            const RetutrnInitMessage: RetutrnInitMessageType = await res.json();
 
-            return data; // ← 呼び出し側で「待てる」
+            return RetutrnInitMessage; // ← 呼び出し側で「待てる」
         } catch (err) {
             console.error(err);
             throw err; // ← await した側にエラーを伝播
         }
     };
 
-    const sendMoveEvent = async (sseMessage : SSEMessageType) => {
+    const sendGameEvent = async (gameEventMessage : gameEventMessageType) => {
         try {
-            const res = await fetch("http://localhost:3000/move", {
+            const res = await fetch("http://localhost:3000/gameEvent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify(sseMessage)
+            body: JSON.stringify(gameEventMessage)
         });
 
-        if (!res.ok) {
-            throw new Error("通信エラー");
-        }
+        const ReturnGameEventMessage: ReturnGameEventMessageType = await res.json();
+        console.log(ReturnGameEventMessage);
 
         } catch (err) {
             console.error(err);
@@ -42,23 +41,5 @@ export function ShogiAPI() {
         }
     }
 
-    const sendPromotedEvent = async (sseMessage : SSEMessageType) => {
-        try {
-            const res = await fetch("http://localhost:3000/move", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify(sseMessage)
-            });
-
-            if (!res.ok) {
-                throw new Error("通信エラー");
-            }
-        } catch (err) {
-            console.error(err);
-            throw err; // ← await した側にエラーを伝播
-        }
-    }
-
-  return { sendInitEvent, sendMoveEvent, sendPromotedEvent };
+  return { sendInitEvent, sendGameEvent };
 }

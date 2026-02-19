@@ -1,5 +1,16 @@
-import { gameEventType, initEventType } from "./gameType";
+import { gameEventType, gameEventResultType } from "./gameType";
+import { lightPieceInstance } from "../const/initialBoard"
 
-export type InitMessageType = initEventType;
-export type SSEMessageType = gameEventType;
-export type ReturnSSEMessageType = gameEventType;
+export interface InitMessageType {
+    type : "init";
+    userType : "Sente" | "Gote" | "Spectator";
+}
+
+export interface RetutrnInitMessageType{
+    type : "init";
+    userCode : number;
+    boardData : lightPieceInstance[][];
+};
+
+export type gameEventMessageType = gameEventType;
+export type ReturnGameEventMessageType = gameEventResultType;
