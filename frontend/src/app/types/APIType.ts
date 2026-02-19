@@ -10,7 +10,14 @@ export interface RetutrnInitMessageType{
     type : "init";
     userCode : number;
     boardData : lightPieceInstance[][];
+    currentTurn : "Sente" | "Gote";
 };
+
+export interface ReturnReloadMessageType {
+    type : "Reload";
+    boardData : lightPieceInstance[][];
+    currentTurn : "Sente" | "Gote";
+}
 
 export type gameEventMessageType = gameEventType;
 export type ReturnGameEventMessageType = gameEventResultType;

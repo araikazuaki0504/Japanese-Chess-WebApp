@@ -17,7 +17,7 @@ export class GameEngine {
       this.userManager = UserManager.getInstance(); 
     }
 
-    getuserType() : "Sente" | "Gote" {
+    getcurrentTurn() : "Sente" | "Gote" {
         return this.currentTurn;
     }
 
@@ -99,7 +99,7 @@ export class GameEngine {
 
     validation(gameEvent : gameEventType) : boolean {
       if (this.userManager.getUserType(gameEvent.userCode) !== this.currentTurn) return false;
-      
+
       switch(gameEvent.type) {
         case "move":
           if (!(gameEvent.to && gameEvent.from))return false;
@@ -194,7 +194,7 @@ export class GameEngine {
       // ユーザーID取得
       const userID = this.userManager.getUserID(this.currentTurn as "Sente" | "Gote" | "Spectator")
 
-      if (reducer.userCode !== userID) return; // 保留
+      if (reducer.userCode !== userID) return;
 
       if (reducer.type === "error") return;
 
@@ -232,8 +232,8 @@ export class GameEngine {
       
       // 手番替え
       const tmpTurn = this.otherTurn;
+      this.otherTurn = this.currentTurn;
       this.currentTurn = tmpTurn;
-      this.otherTurn = tmpTurn;
     }
 
     private checkPieceData(clientPieceData : PiecesType, serverPieceData : PiecesType) : boolean {

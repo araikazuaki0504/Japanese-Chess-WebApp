@@ -21,10 +21,11 @@ export interface gameEventMessage {
 }
 
 export interface ReturngameEventMessage {
-    type : "move" | "promoted" | "captured" | "resign" | "error";
-    userCode : number;
-    pieceData : PiecesType;
+    type: "move" | "promoted" | "captured" | "resign" | "error";
+    userCode: number;
+    pieceData: PiecesType;
     to? : [number, number];
     from? : [number, number];
-    result : boolean;
+    currentTurn : "Sente" | "Gote";
+    result: boolean;
 }

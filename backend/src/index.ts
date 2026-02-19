@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 
-import { gameEventMessage } from "./types/APIType";
+import { gameEventMessage, ReturngameEventMessage } from "./types/APIType";
 import { InitMessageType } from "./types/APIType";
 
 import { GameEngine } from "./game/gameEngine";
@@ -56,17 +56,32 @@ app.post("/init", (req: express.Request, res: express.Response) => {
 
   userManager.addUser(initMessage.userType,userID);
 
-  res.json({
+  return res.json({
     type: "init",
     userCode: userID,
     boardData: clientBoard,
+    currentTurn: gameEngine.getcurrentTurn()
   });
     
 });
 
-// リセット
-app.post("/reset", (req: express.Request, res: express.Response) => {
-  
+// リロード(再読み込み)
+app.get("/reload", (req: express.Request, res: express.Response) => {
+  res.setHeader("Content-Type", "application/json");
+
+  const userID = req.cookies.userID;
+
+  if (!userID) return res.json({});
+
+  const userType = userManager.getUserType(userID);
+  const isRotation : boolean = userType === "Sente";
+  const clientBoard = mapBoardToClient(gameEngine.getBoard(),isRotation);
+
+  return res.json({
+    type: "reload",
+    boardData: clientBoard,
+    currentTurn: gameEngine.getcurrentTurn()
+  });
 });
 
 /** SSE */
@@ -107,6 +122,8 @@ app.post("/gameEvent", (req: express.Request, res: express.Response) => {
 
   console.log("gameEvent");
   console.log("result:",result);
+  console.log("userType:",UserType);
+  console.log("currentTurn",gameEngine.getcurrentTurn());
   console.log(convertedGameEvent);
 
   if (result) { 
@@ -114,7 +131,13 @@ app.post("/gameEvent", (req: express.Request, res: express.Response) => {
     gameEngine.ApplyReducer(convertedGameEvent);
   };
 
-  return res.json({ result: result });
+  const returnGameEventMessage : ReturngameEventMessage = {
+    ...convertedGameEvent,
+    currentTurn : gameEngine.getcurrentTurn(),
+    result : result
+  }
+
+  return res.json(returnGameEventMessage);
 });
 
 app.listen(3000, () => {

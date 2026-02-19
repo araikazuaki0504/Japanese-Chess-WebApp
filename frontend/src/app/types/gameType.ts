@@ -14,6 +14,7 @@ export interface gameEventResultType {
     pieceData: PiecesType;
     to? : [number, number];
     from? : [number, number];
+    currentTurn : "Sente" | "Gote";
     result: boolean;
 }
 

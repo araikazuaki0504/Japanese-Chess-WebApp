@@ -14,6 +14,7 @@ export class GameEngine {
     private didMyselfCapturedListUpdate : boolean = false;
     private didOpponentCapturedListUpdate : boolean = false;
     private userType : "Sente" | "Gote" | "Spectator" = "Spectator";
+    private currentTurn : "Sente" | "Gote" = "Sente";
     userCode = 0;
 
     private constructor() {
@@ -79,6 +80,15 @@ export class GameEngine {
 
     setBoard(board: typeof initialBoard) : void {
         this.board = board;
+    }
+
+    setCurrentTurn(currentTurn : "Sente" | "Gote") : void {
+        this.currentTurn = currentTurn;
+    }
+
+    isMyTurn() : boolean {
+        if (this.userType === "Spectator") return true;
+        return this.currentTurn === this.userType;
     }
 
     didUpdateMyselfCapturedList() : boolean {
@@ -338,6 +348,14 @@ export class GameEngine {
             if (this.board === oldBoard) this.didBoardUpdate = false;
             if (this.opponentcapturedPiecesList === oldOpponentCapturedList) this.didOpponentCapturedListUpdate = false;
         }
+
+        // 手番替え
+        this.turnChange();
+    }
+
+    turnChange() : void {
+        // 手番替え
+       this.currentTurn = (this.currentTurn === "Sente" ? "Gote" : "Sente");
     }
 
     private checkPieceData(clientPieceData : PiecesType, serverPieceData : PiecesType) : boolean {

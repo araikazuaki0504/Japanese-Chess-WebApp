@@ -1,7 +1,7 @@
-import { gameEventMessageType, ReturnGameEventMessageType , InitMessageType, RetutrnInitMessageType } from "../types/APIType"
+import { gameEventMessageType, ReturnGameEventMessageType , InitMessageType, RetutrnInitMessageType, ReturnReloadMessageType } from "../types/APIType"
 
 export function ShogiAPI() {
-    const sendInitEvent = async (initMessageType : InitMessageType): Promise<RetutrnInitMessageType> => {
+    const sendInitEvent = async (initMessageType : InitMessageType) : Promise<RetutrnInitMessageType> => {
         try {
             const res = await fetch("http://localhost:3000/init", {
                 method: "POST",
@@ -16,14 +16,14 @@ export function ShogiAPI() {
 
             const RetutrnInitMessage: RetutrnInitMessageType = await res.json();
 
-            return RetutrnInitMessage; // ← 呼び出し側で「待てる」
+            return RetutrnInitMessage;
         } catch (err) {
             console.error(err);
-            throw err; // ← await した側にエラーを伝播
+            throw err;
         }
     };
 
-    const sendGameEvent = async (gameEventMessage : gameEventMessageType) => {
+    const sendGameEvent = async (gameEventMessage : gameEventMessageType) : Promise<ReturnGameEventMessageType> => {
         try {
             const res = await fetch("http://localhost:3000/gameEvent", {
             method: "POST",
@@ -32,8 +32,10 @@ export function ShogiAPI() {
             body: JSON.stringify(gameEventMessage)
         });
 
-        const ReturnGameEventMessage: ReturnGameEventMessageType = await res.json();
-        console.log(ReturnGameEventMessage);
+        const returnGameEventMessage: ReturnGameEventMessageType = await res.json();
+        console.log(returnGameEventMessage);
+
+        return returnGameEventMessage;
 
         } catch (err) {
             console.error(err);
@@ -41,5 +43,24 @@ export function ShogiAPI() {
         }
     }
 
-  return { sendInitEvent, sendGameEvent };
+    const sendReloadEvent = async () : Promise<ReturnReloadMessageType> => {
+        try {
+            const res = await fetch("http://localhost:3000/reload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include"
+        });
+
+        const returnGameEventMessage : ReturnReloadMessageType = await res.json();
+        // console.log(ReturnGameEventMessage);
+
+        return returnGameEventMessage;
+
+        } catch (err) {
+            console.error(err);
+            throw err; // ← await した側にエラーを伝播
+        }
+    }
+
+  return { sendInitEvent, sendGameEvent, sendReloadEvent };
 }
