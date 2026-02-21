@@ -5,7 +5,7 @@ import { PiecesType, moveType, capturedPieces } from "../types/piecesInfoType";
 import { UserManager } from "./UserManager";
 
 export class GameEngine {
-    private board : PieceInstance[][] = initialBoard;
+    private board : PieceInstance[][] = initialBoard.map(row => row.map(piece => ({...piece})));
     private senteCapturedPiecesList : capturedPieces[] = [];
     private goteCapturedPiecesList : capturedPieces[] = [];
     private static BOARD_SIZE: number = 9;
@@ -101,12 +101,21 @@ export class GameEngine {
         else this.goteCapturedPiecesList = capturedPiecesList.filter((capturedPiece : capturedPieces) => capturedPiece.pieceCount > 0);
     }
 
+    resetAll() : void {
+        this.board = initialBoard.map(row => row.map(piece => ({...piece})));
+        this.senteCapturedPiecesList = [];
+        this.goteCapturedPiecesList = [];
+        this.currentTurn = "Sente";
+        this.otherTurn = "Gote";
+    }
+
     validation(gameEvent : gameEventType) : boolean {
+      if (gameEvent.type === "resetAll") return true;
       if (this.userManager.getUserType(gameEvent.userCode) !== this.currentTurn) return false;
 
       switch(gameEvent.type) {
         case "move":
-          if (!(gameEvent.to && gameEvent.from))return false;
+          if (!(gameEvent.to && gameEvent.from && gameEvent.pieceData))return false;
           return this.canMove({
             pieceData: gameEvent.pieceData,
             to: gameEvent.to,
@@ -114,19 +123,19 @@ export class GameEngine {
           });
         case "promoted":
           if (gameEvent.isPromoted === false) return true;
-          if (!gameEvent.to) return false;
+          if (!(gameEvent.to && gameEvent.pieceData)) return false;
           return this.canPromoted({
             pieceData: gameEvent.pieceData,
             at: gameEvent.to
           });
         case "captured":
-          if (!gameEvent.from) return false;
+          if (!(gameEvent.from && gameEvent.pieceData)) return false;
           return this.canCapturedPiece({
             pieceData: gameEvent.pieceData,
             at: gameEvent.from
           });
         case "resign":
-          if (!gameEvent.to) return false;
+          if (!(gameEvent.to && gameEvent.pieceData)) return false;
           return this.canResignedPiece({
             pieceData: gameEvent.pieceData,
             at: gameEvent.to
@@ -214,7 +223,7 @@ export class GameEngine {
       }
 
       // 移動
-      if (reducer.type === "move" && reducer.to !== undefined && reducer.from !== undefined) {
+      if (reducer.type === "move" && reducer.to !== undefined && reducer.from !== undefined && reducer.pieceData) {
 
         // 新しい盤面へ
         this.movePiece_ApplyBoard({
@@ -222,27 +231,30 @@ export class GameEngine {
             to : reducer.to,
             from : reducer.from
         });
-      } else if (reducer.type === "promoted" && reducer.to !== undefined) {// 成り
+      } else if (reducer.type === "promoted" && reducer.to !== undefined && reducer.pieceData) {// 成り
         // 新しい盤面へ
         this.promotedPiece_ApplyBoard({
             pieceData : reducer.pieceData,
             at : reducer.to,
         });
         this.turnChange();
-      } else if (reducer.type === "captured" && reducer.from !== undefined) {// 駒の取得
+      } else if (reducer.type === "captured" && reducer.from !== undefined && reducer.pieceData) {// 駒の取得
 
         // 新しい相手の持ち駒リストへ
         this.capturedPiece_ApplyList({
             pieceData : reducer.pieceData,
             at : reducer.from
         });
-      } else if (reducer.type === "resign" && reducer.to !== undefined) {// 駒を置く
+      } else if (reducer.type === "resign" && reducer.to !== undefined && reducer.pieceData) {// 駒を置く
 
         this.resignedPiece({
             pieceData : reducer.pieceData,
             at : reducer.to
         });
         this.turnChange();
+      } else if (reducer.type === "resetAll") {
+        // 盤面と持ち駒リストを初期化
+        this.resetAll();
       } else {
         return;
       }
@@ -271,7 +283,6 @@ export class GameEngine {
     }
 
     static convertServerCoordinate(gameEvent : gameEventType, userType : "Sente" | "Gote") : gameEventType {
-      console.log(userType);
       if (userType === "Gote") return gameEvent;
 
       return {

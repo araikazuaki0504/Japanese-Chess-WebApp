@@ -3,19 +3,20 @@ import { moveType, PiecesType } from "../types/piecesInfoType";
 
 import { initialBoard, PieceInstance, lightPieceInstance, lightCapturedPieceData } from "../const/initialBoard";
 import { Blank,piecesData } from "../const/piecesData";
+import { User } from "../user/user";
 
 export class GameEngine {
     private static instance: GameEngine;
-    private board : ReadonlyArray<ReadonlyArray<PieceInstance>> = initialBoard;
+    private board : ReadonlyArray<ReadonlyArray<PieceInstance>> = initialBoard.map(row => row.map(piece => ({...piece})));;
     private myselfcapturedPiecesList : ReadonlyArray<capturedPieces> = [];
     private opponentcapturedPiecesList : ReadonlyArray<capturedPieces> = [];
     private BOARD_SIZE: number = 9;
     private didBoardUpdate : boolean = false;
     private didMyselfCapturedListUpdate : boolean = false;
     private didOpponentCapturedListUpdate : boolean = false;
-    private userType : "Sente" | "Gote" | "Spectator" = "Spectator";
+    private didTurnUpdate : boolean = false;
     private currentTurn : "Sente" | "Gote" = "Sente";
-    userCode = 0;
+    private user = User.getInstance();
 
     private constructor() {
         this.board = initialBoard;
@@ -29,16 +30,16 @@ export class GameEngine {
         return GameEngine.instance;
     }
 
-    getuserType() : "Sente" | "Gote" | "Spectator" {
-        return this.userType;
-    }
-
     getBoardSize() : number {
         return this.BOARD_SIZE;
     }
 
     getBoard() : ReadonlyArray<ReadonlyArray<PieceInstance>> {
         return this.board;
+    }
+
+    getCurrentTurn() : "Sente" | "Gote" {
+        return this.currentTurn;
     }
 
     getCapturedPieceData(at : [number,number]) : PiecesType {
@@ -104,10 +105,6 @@ export class GameEngine {
         this.didOpponentCapturedListUpdate = true;
     }
 
-    setuserType(userType : "Sente" | "Gote" | "Spectator") {
-        this.userType = userType;
-    }
-
     setBoard(board: typeof initialBoard) : void {
         this.board = board;
     }
@@ -117,8 +114,9 @@ export class GameEngine {
     }
 
     isMyTurn() : boolean {
-        if (this.userType === "Spectator") return true;
-        return this.currentTurn === this.userType;
+        const userType = this.user.getUserType();
+        if (userType === "Spectator") return true;
+        return this.currentTurn === userType;
     }
 
     didUpdateMyselfCapturedList() : boolean {
@@ -136,6 +134,12 @@ export class GameEngine {
     didUpdateBoard() : boolean {
         const result = this.didBoardUpdate;
         this.didBoardUpdate = false;
+        return result;
+    }
+
+    didUpdateTurn() : boolean {
+        const result = this.didTurnUpdate;
+        this.didTurnUpdate = false;
         return result;
     }
 
@@ -258,6 +262,17 @@ export class GameEngine {
         }
     }
 
+    resetAll() : void {
+        this.board = initialBoard.map(row => row.map(piece => ({...piece})));;
+        this.myselfcapturedPiecesList = [];
+        this.opponentcapturedPiecesList = [];
+        this.currentTurn = "Sente";
+
+        this.didBoardUpdate = true;
+        this.didMyselfCapturedListUpdate = true;
+        this.didOpponentCapturedListUpdate = true;
+    }
+
     canMove(movePieceInfo: movePieceInfoType) : boolean {
         const [fromX, fromY] = movePieceInfo.from;
         const [toX, toY] = movePieceInfo.to;
@@ -316,7 +331,7 @@ export class GameEngine {
     }
 
     ApplyReducer(reducer: gameEventType) : void {
-        if (reducer.userCode === this.userCode) return;
+        if (reducer.userCode === this.user.getUserCode()) return;
 
         if (reducer.type === "error") return;
 
@@ -341,7 +356,7 @@ export class GameEngine {
         }
 
         // 成り
-        if (reducer.type === "promoted" && reducer.to !== undefined) {
+        if (reducer.type === "promoted" && reducer.to !== undefined && reducer.pieceData !== undefined) {
             const oldBoard = this.board;
 
             // 新しい盤面へ
@@ -387,11 +402,17 @@ export class GameEngine {
 
             this.turnChange();
         }
+
+        // 初期化
+        if (reducer.type === "resetAll") {
+            this.resetAll();
+        }
     }
 
     turnChange() : void {
         // 手番替え
        this.currentTurn = (this.currentTurn === "Sente" ? "Gote" : "Sente");
+       this.didTurnUpdate = true;
     }
 
     private checkPieceData(clientPieceData : PiecesType, serverPieceData : PiecesType) : boolean {
@@ -410,7 +431,7 @@ export class GameEngine {
     private coordinateRotate180(coordinate : [number,number]) : [number,number] {
         const [x,y] = coordinate;
         
-        if (this.userType === "Sente") return [8 - x, 8 - y];
+        if (this.user.getUserType() === "Sente") return [8 - x, 8 - y];
         else return coordinate;
     }
 }

@@ -1,11 +1,11 @@
 import "./css/UserTypeSelect.css";
 
-import { GameEngine } from "./game/gameEngine";
+import { User } from "./user/user";
 
 export default function UserTypeSelect({ setIsSelect } : { setIsSelect : (isSelect: boolean) => void}) {
     const selectedHandler = (SelecteduserType : "Sente" | "Gote" | "Spectator") => {
-        const gameEngine = GameEngine.getInstance();
-        gameEngine.setuserType(SelecteduserType);
+        const user = User.getInstance();
+        user.setUserType(SelecteduserType);
 
         setIsSelect(true);
     }
@@ -31,7 +31,7 @@ export default function UserTypeSelect({ setIsSelect } : { setIsSelect : (isSele
 
         <button
           className="select-button spectator"
-          onClick={() => () => selectedHandler("Spectator")}
+          onClick={() => selectedHandler("Spectator")}
         >
           観戦者
         </button>

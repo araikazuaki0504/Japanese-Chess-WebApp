@@ -25,19 +25,15 @@ export interface ReturnReloadMessageType{
 };
 
 export interface gameEventMessage {
-    type : "move" | "promoted" | "captured" | "resign" | "error";
+    type : "move" | "promoted" | "captured" | "resign" | "resetAll" | "error";
     userCode : number;
-    pieceData : PiecesType;
+    pieceData? : PiecesType;
     to? : [number, number];
     from? : [number, number];
+    isPromoted? : boolean;
 }
 
-export interface ReturngameEventMessage {
-    type: "move" | "promoted" | "captured" | "resign" | "error";
-    userCode: number;
-    pieceData: PiecesType;
-    to? : [number, number];
-    from? : [number, number];
+export interface ReturngameEventMessage extends gameEventMessage {
     currentTurn : "Sente" | "Gote";
     result: boolean;
 }

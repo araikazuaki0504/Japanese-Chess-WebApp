@@ -19,3 +19,132 @@ html, body {
   height: 100vh;
   background-color: #f5f5f5;
 }
+
+.shogi-root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  height: 100vh;
+}
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10%;
+}
+
+.controls-container {
+  width: 220px;
+}
+
+.right-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10%;
+}
+
+/* デスクトップでは right-column を画面下寄せにする */
+@media (min-width: 601px) {
+  .right-column {
+    justify-content: flex-end;
+    height: calc(100vh - 32px);
+    box-sizing: border-box;
+  }
+  .left-column {
+    justify-content: flex-start;
+    height: calc(100vh - 32px);
+    box-sizing: border-box;
+  }
+}
+
+.board-wrapper {
+  position: relative;
+  display: inline-block; /* 盤の幅にフィット */
+}
+
+.board-controls-overlay {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(100% + 12px); /* 盤の真上 */
+  z-index: 20;
+
+  width: calc(9 * 56px - 24px); /* 盤より少し小さく */
+  max-width: 100%;
+
+  display: flex;
+  justify-content: center;
+}
+
+:root {
+  /* デスクトップ（26インチ想定） */
+  --cell-size: 56px;
+  --piece-size: 48px;
+  --komadai-width: 180px;
+  --gap-size: 24px;
+}
+
+/* ノートPC */
+@media (max-width: 1440px) {
+  :root {
+    --cell-size: 40px;
+    --piece-size: 32px;
+    --komadai-width: 160px;
+    --gap-size: 16px;
+  }
+}
+
+/* タブレット */
+@media (max-width: 1024px) {
+  :root {
+    --cell-size: 40px;
+    --piece-size: 32px;
+    --komadai-width: 140px;
+    --gap-size: 12px;
+  }
+}
+
+/* スマホ */
+@media (max-width: 600px) {
+  :root {
+    --cell-size: 32px;
+    --piece-size: 26px;
+    --komadai-width: 120px;
+    --gap-size: 8px;
+  }
+}
+
+.shogi-root {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--gap-size);
+  width: 100%;
+  height: 100vh;
+}
+
+/* スマホでは縦並び */
+@media (max-width: 600px) {
+  .shogi-root {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .left-column,
+  .right-column {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  /* モバイルでは右カラムの高さ制約を解除 */
+  .right-column {
+    height: auto;
+    justify-content: center;
+  }
+}

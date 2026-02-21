@@ -1,0 +1,79 @@
+.control-panel {
+  width: 100%;
+  max-width: 480px;
+  padding: 12px;
+  border-radius: 10px;
+  background-color: #2b2b2b;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 先手後手表示 */
+.turn-indicator {
+  display: flex;
+  justify-content: space-between;
+  background-color: #1f1f1f;
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.turn {
+  flex: 1;
+  text-align: center;
+  padding: 6px 0;
+  border-radius: 6px;
+  font-weight: bold;
+  opacity: 0.4;
+}
+
+.turn.sente.active {
+  background-color: #d32f2f;
+  opacity: 1;
+}
+
+.turn.gote.active {
+  background-color: #1976d2;
+  opacity: 1;
+}
+
+/* ボタン */
+.control-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn.reset {
+  background-color: #555;
+  color: #fff;
+}
+
+.btn.undo {
+  background-color: #ff9800;
+  color: #000;
+}
+
+.board-controls-overlay {
+  width: calc(9 * var(--cell-size) - 24px);
+}

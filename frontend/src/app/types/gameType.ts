@@ -1,9 +1,9 @@
 import { PiecesType } from "./piecesInfoType";
 
 export interface gameEventType {
-    type: "move" | "promoted" | "captured" | "resign"  | "error";
+    type: "move" | "promoted" | "captured" | "resign" | "resetAll" | "error";
     userCode: number;
-    pieceData: PiecesType;
+    pieceData?: PiecesType;
     to? : [number, number];
     from? : [number, number];
     isPromoted? : boolean;

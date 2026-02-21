@@ -59,3 +59,14 @@
   transform: translateY(0);
   box-shadow: none;
 }
+
+@media (max-width: 600px) {
+  .buttons {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .select-button {
+    width: 200px;
+  }
+}

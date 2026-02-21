@@ -7,12 +7,14 @@ import { InitMessageType, ReturnInitMessageType, ReturnReloadMessageType } from 
 import { GameEngine } from "./game/gameEngine";
 import { SSEManager } from "./SSE/SSEManager";
 import { UserManager } from "./game/UserManager";
+import { GameEventManager } from "./SSE/gameEventManager";
 import { mapBoardToClient, toLightCapturedPiecesList } from "./game/gameLogic"
 
 const app = express();
 const gameEngine = new GameEngine();
 const sseManager = SSEManager.getInstance();
 const userManager = UserManager.getInstance();
+const gameEventManager = new GameEventManager();
 const cookieParser = require('cookie-parser')
 
 app.use(cors({

@@ -73,3 +73,19 @@
 .komadai.opponent img {
   transform: rotate(180deg);
 }
+
+.komadai {
+  width: var(--komadai-width);
+  min-height: var(--komadai-width);
+  border: 3px solid #333;
+  background-color: #e8c98b;
+
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 8px;
+}
+
+.piece img {
+  width: var(--piece-size);
+}
