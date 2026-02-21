@@ -130,6 +130,15 @@ app.post("/gameEvent", (req: express.Request, res: express.Response) => {
   const UserType = userManager.getUserType(gameEvent.userCode);
   const convertedGameEvent = GameEngine.convertServerCoordinate(gameEvent,UserType as "Sente" | "Gote");
 
+  if (!gameEventManager.check(gameEvent.type)) {
+    console.log("Invalid event sequence:", gameEvent.type);
+    return res.json({
+      ...convertedGameEvent,
+      currentTurn : gameEngine.getcurrentTurn(),
+      result : false
+    });
+  }  
+
   const result = gameEngine.validation(convertedGameEvent);
 
   console.log("gameEvent");

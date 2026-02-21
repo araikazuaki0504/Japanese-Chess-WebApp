@@ -3,73 +3,59 @@ import { gameEventMessage } from "../types/APIType";
 type gameEventType = gameEventMessage["type"];
 type eventSequence = gameEventType[];
 
-const VALID_SEQUENCES: eventSequence[] = [
-  ["captured", "move", "promoted"],
-  ["move", "promoted"],
-  ["resign"],
-  ["resetAll"],
-];
-
-type gameState = | "idle" | "captured" | "move" | "finished" | "error";
-
 export class GameEventManager {
-    private state: gameState = "idle";
+  private readonly sequences: eventSequence[] = [
+    ["captured", "move", "promoted"],
+    ["move", "promoted"],
+    ["resign"],
+    ["resetAll"],
+  ];
 
-  handleEvent(event: gameEventType): gameState {
-    if (this.state === "error") return "error";
+  private sequenceIndex: number | null = null;
+  private eventIndex: number = 0;
 
-    switch (this.state) {
-      case "idle":
-        return this.fromIdle(event);
-      case "captured":
-        return this.fromCaptured(event);
-      case "move":
-        return this.fromMove(event);
-      case "finished":
-        return this.toError();
-      default:
-        return this.toError();
-     }
+  check(event: gameEventType): boolean {
+    // まだどのシーケンスか確定していない場合
+    if (this.sequenceIndex === null) {
+      return this.tryStartSequence(event);
     }
 
-    private fromIdle(event: gameEventType): gameState {
-        switch (event) {
-        case "captured":
-            return (this.state = "captured");
-        case "move":
-            return (this.state = "move");
-        case "resign":
-        case "resetAll":
-            return (this.state = "finished");
-        default:
-            return this.toError();
-        }
+    const sequence = this.sequences[this.sequenceIndex];
+    const expected = sequence[this.eventIndex];
+
+    if (event !== expected) {
+      return false;
     }
 
-    private fromCaptured(event: gameEventType): gameState {
-        if (event === "move") {
-        return (this.state = "move");
-        }
-        return this.toError();
+    this.eventIndex++;
+
+    // シーケンス完了
+    if (this.eventIndex >= sequence.length) {
+      this.reset();
     }
 
-    private fromMove(event: gameEventType): gameState {
-        if (event === "promoted") {
-        return (this.state = "idle"); // 1手完了
-        }
-        return this.toError();
-    }
-
-    private toError(): gameState {
-        this.state = "error";
-        return "error";
-    }
-
-    reset() {
-        this.state = "idle";
-    }
-
-    getState(): gameState {
-        return this.state;
-    }
+    return true;
   }
+
+  private tryStartSequence(event: gameEventType): boolean {
+    for (let i = 0; i < this.sequences.length; i++) {
+      if (this.sequences[i][0] === event) {
+        this.sequenceIndex = i;
+        this.eventIndex = 1;
+
+        // 1要素シーケンス（resign / resetAll）
+        if (this.sequences[i].length === 1) {
+          this.reset();
+        }
+
+        return true;
+      }
+    }
+    return false;
+  }
+
+  reset(): void {
+    this.sequenceIndex = null;
+    this.eventIndex = 0;
+  }
+}
