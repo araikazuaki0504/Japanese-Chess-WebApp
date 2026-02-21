@@ -39,9 +39,8 @@ export class GameEngine {
         return userType === "Sente" ? this.senteCapturedPiecesList : this.goteCapturedPiecesList;
     }
 
-    undoMovePiece(undoMovePieceInfo: unMovePieceInfoType) : unMovePieceInfoType {
+    undoMovePiece(undoMovePieceInfo: unMovePieceInfoType) {
         this.undoMovePiece_ApplyBoard(undoMovePieceInfo);
-        return undoMovePieceInfo;
     }
 
     undoMovePiece_ApplyBoard(undoMovePieceInfo: unMovePieceInfoType) : void {
@@ -54,9 +53,8 @@ export class GameEngine {
         this.board[toY][toX] = { def: Blank, owner: "None" };
     }
 
-    undoPromotedPiece(undoPromotedPieceInfo : unPromotedPieceInfoType) : unPromotedPieceInfoType {
+    undoPromotedPiece(undoPromotedPieceInfo : unPromotedPieceInfoType) : void {
         this.undoPromotedPiece_ApplyBoard(undoPromotedPieceInfo);
-        return undoPromotedPieceInfo;
     }
 
     undoPromotedPiece_ApplyBoard(undoPromotedPieceInfo : unPromotedPieceInfoType) : void {
@@ -66,9 +64,8 @@ export class GameEngine {
         this.board[y][x] = { def: unPromotedPieceData, owner: this.currentTurn};
     }
 
-    undoCapturedPiece(undoCapturedPieceInfo : unCapturedPieceInfoType) : unCapturedPieceInfoType {
+    undoCapturedPiece(undoCapturedPieceInfo : unCapturedPieceInfoType) : void {
         this.undoCapturedPiece_ApplyList(undoCapturedPieceInfo);
-        return undoCapturedPieceInfo;
     }
 
     undoCapturedPiece_ApplyList(undoCapturedPieceInfo : unCapturedPieceInfoType) : void {
@@ -87,10 +84,9 @@ export class GameEngine {
         else this.goteCapturedPiecesList = capturedPiecesList.filter((capturedPiece : capturedPieces) => capturedPiece.pieceCount > 0);
     }
 
-    undoResignedPiece(undoResignedPieceInfo: unResignedPieceInfoType) : unResignedPieceInfoType {
+    undoResignedPiece(undoResignedPieceInfo: unResignedPieceInfoType) : void {
         this.undoResignedPiece_ApplyBoard(undoResignedPieceInfo);
         this.undoResignedPiece_ApplyList(undoResignedPieceInfo);
-        return undoResignedPieceInfo;
     }
 
     private undoResignedPiece_ApplyBoard(undoResignedPieceInfo: unResignedPieceInfoType) : void {
@@ -343,78 +339,77 @@ export class GameEngine {
       });
     }
 
-    undoApplyReducer() : ReturnGameEventType | undefined {
+    undoApplyReducer() : ReturnGameEventType {
+      const oneTurnGameHistory : gameEventHistoryType[] = [];
 
-      const lastEvent = this.getGameEventHistory();
-      const PieceData = piecesData[lastEvent.pieceCode];
+      // 直近の1ターン分のイベントを取得
+      while (this.gameEventHistory.length > 0) {
+        const lastEvents = this.getGameEventHistory();
+        oneTurnGameHistory.push(lastEvents);
 
-      switch(lastEvent.type) {
-        case "move":
-          this.undoMovePiece({
-            pieceData: PieceData!,
-            turn: lastEvent.turn,
-            to: lastEvent.to!,
-            from: lastEvent.from!
-          });
-
-          return ({
-            type: "undo",
-            userCode: 0, // userCodeは特に意味を持たないため0を返す
-            to: lastEvent.to,
-            from: lastEvent.from,
-            pieceData: PieceData!,
-            currentTurn: lastEvent.turn,
-            result: true
-          });
-        case "promoted":
-          this.undoPromotedPiece({
-            pieceData: PieceData!,
-            turn: lastEvent.turn,
-            at: lastEvent.to!
-          });
-          
-          return ({
-            type: "undo",
-            userCode: 0, // userCodeは特に意味を持たないため0を返す
-            to: lastEvent.to,
-            pieceData: PieceData!,
-            currentTurn: lastEvent.turn,
-            result: true
-          });
-        case "captured":
-          this.undoCapturedPiece({
-            pieceData: PieceData!,
-            turn: lastEvent.turn,
-            at: lastEvent.from!
-          });
-          
-          return({
-            type: "undo",
-            userCode: 0, // userCodeは特に意味を持たないため0を返す
-            from: lastEvent.from,
-            pieceData: PieceData!,
-            currentTurn: lastEvent.turn,
-            result: true
-          });
-        case "resign":
-          this.undoResignedPiece({
-            pieceData: PieceData!,
-            turn: lastEvent.turn,
-            at: lastEvent.to!
-          });
-          
-          return({
-            type: "undo",
-            userCode: 0, // userCodeは特に意味を持たないため0を返す
-            to: lastEvent.to,
-            pieceData: PieceData!,
-            currentTurn: lastEvent.turn,
-            result: true
-          });
+        if (lastEvents.type === "promoted") {
+          const promotedEvent = oneTurnGameHistory.pop();
+          this.gameEventHistory.push(promotedEvent!); // 成りイベントは次ターンのため、再度履歴に追加
+          break;
+        } else if (lastEvents.type === "resign") {
+          break;
+        }
       }
 
-      return;
+      const undoEvent : ReturnGameEventType = {
+        type: "undo",
+        userCode: -1, // undoイベントには特定のユーザーコードはないため、-1(サーバーコード)を使用
+        currentTurn: oneTurnGameHistory[0].turn, 
+        result: true
+      };
+
+      oneTurnGameHistory.forEach((lastEvent : gameEventHistoryType) => {
+        const PieceData = piecesData[lastEvent.pieceCode];
+        switch(lastEvent.type) {
+          case "move":
+            this.undoMovePiece({
+              pieceData: PieceData!,
+              turn: lastEvent.turn,
+              to: lastEvent.to!,
+              from: lastEvent.from!
+            });
+
+            undoEvent.from = lastEvent.from;
+            break;
+          case "promoted":
+            this.undoPromotedPiece({
+              pieceData: PieceData!,
+              turn: lastEvent.turn,
+              at: lastEvent.to!
+            });
+
+            undoEvent.to = lastEvent.to;
+            break;
+          case "captured":
+            this.undoCapturedPiece({
+              pieceData: PieceData!,
+              turn: lastEvent.turn,
+              at: lastEvent.from!
+            });
+
+            undoEvent.pieceData = PieceData;
+            break;
+          case "resign":
+            this.undoResignedPiece({
+              pieceData: PieceData!,
+              turn: lastEvent.turn,
+              at: lastEvent.to!
+            });
+
+            undoEvent.pieceData = PieceData;
+            undoEvent.to = lastEvent.to;
+            break;
+        }
+      });
+
+      return undoEvent;
     }
+      
 
     private getGameEventHistory() : gameEventHistoryType {
       return this.gameEventHistory.pop()!;

@@ -1,5 +1,5 @@
 import { PiecesType } from "./piecesInfoType";
-import { gameEventMessage, ReturngameEventMessage } from "./APIType";
+import { gameEventMessage, ReturnGameEventMessage } from "./APIType";
 
 export interface movePieceInfoType {
     pieceData: PiecesType;
@@ -24,7 +24,7 @@ export interface resignedPieceInfoType {
 
 export interface gameEventHistoryType {
     type : gameEventType["type"];
-    turn : "Sente" | "Gote";
+    turn : "Sente" | "Gote" ;
     pieceCode : number;
     to? : [number, number];
     from? : [number, number];
@@ -32,7 +32,7 @@ export interface gameEventHistoryType {
 
 export interface unMovePieceInfoType {
     pieceData: PiecesType;
-    turn : "Sente" | "Gote";
+    turn : "Sente" | "Gote" ;
     to : [number, number];
     from : [number, number];
 }
@@ -55,13 +55,5 @@ export interface unResignedPieceInfoType {
     at : [number, number];
 }
 
-export interface ReturnUndoGameEventInfoType {
-    type : "undo";
-    unMovePieceInfo? : unMovePieceInfoType;
-    unPromotedPieceInfo? : unPromotedPieceInfoType;
-    unCapturedPieceInfo? : unCapturedPieceInfoType;
-    unResignedPieceInfo? : unResignedPieceInfoType;
-}
-
 export type gameEventType = gameEventMessage;
-export type ReturnGameEventType = ReturngameEventMessage;
+export type ReturnGameEventType = ReturnGameEventMessage;

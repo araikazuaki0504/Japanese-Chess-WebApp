@@ -1,4 +1,4 @@
-import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType, capturedPieces, resignedPieceInfoType }  from "../types/gameType";
+import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType, capturedPieces, resignedPieceInfoType,unMovePieceInfoType, unPromotedPieceInfoType, unCapturedPieceInfoType, unResignedPieceInfoType }  from "../types/gameType";
 import { moveType, PiecesType } from "../types/piecesInfoType";
 
 import { initialBoard, PieceInstance, lightPieceInstance, lightCapturedPieceData } from "../const/initialBoard";
@@ -262,6 +262,107 @@ export class GameEngine {
         }
     }
 
+    undoMovePiece(undoMovePieceInfo: unMovePieceInfoType) : void {
+        this.board = this.undoMovePiece_ApplyBoard(this.board as PieceInstance[][], undoMovePieceInfo);
+    }
+
+    private undoMovePiece_ApplyBoard(undoBoard :PieceInstance[][], undoMovePieceInfo: unMovePieceInfoType) : PieceInstance[][] {
+        const [fromX, fromY] = undoMovePieceInfo.from;
+        const [toX, toY] = undoMovePieceInfo.to;
+        const movePieceData = undoMovePieceInfo.pieceData;
+        const whoOwner = undoMovePieceInfo.turn === this.user.getUserType() ? "Myself" : "Opponent";
+        
+        const newBoard = this.updateBoard(undoBoard);
+
+        // 移動
+        newBoard[fromY][fromX] = { def: movePieceData, owner: whoOwner };
+        newBoard[toY][toX] = { def: Blank, owner: "None" };
+        return newBoard;
+    }
+
+    undoPromotedPiece(undoPromotedPieceInfo : unPromotedPieceInfoType) : void {
+        this.board = this.undoPromotedPiece_ApplyBoard(this.board as PieceInstance[][], undoPromotedPieceInfo);
+    }
+
+    private undoPromotedPiece_ApplyBoard(undoBoard : PieceInstance[][], undoPromotedPieceInfo : unPromotedPieceInfoType) : PieceInstance[][] {
+        const [x, y] = undoPromotedPieceInfo.at;
+        const unPromotedPieceData = undoPromotedPieceInfo.pieceData;
+        const whoOwner = undoPromotedPieceInfo.turn === this.user.getUserType() ? "Myself" : "Opponent";
+
+        const newBoard = this.updateBoard(undoBoard);
+
+
+        newBoard[y][x] = { def: unPromotedPieceData, owner: whoOwner};
+        return newBoard;
+    }
+
+    undoCapturedPiece(undoCapturedPieceInfo : unCapturedPieceInfoType) : void {
+        const whoOwner = undoCapturedPieceInfo.turn === this.user.getUserType() ? "Myself" : "Opponent";
+        
+        if (whoOwner === "Myself") {
+            this.myselfcapturedPiecesList = this.undoCapturedPiece_ApplyList(this.myselfcapturedPiecesList as capturedPieces[], undoCapturedPieceInfo);
+            this.didMyselfCapturedListUpdate = true;
+        } else {
+            this.opponentcapturedPiecesList = this.undoCapturedPiece_ApplyList(this.opponentcapturedPiecesList as capturedPieces[], undoCapturedPieceInfo);
+            this.didOpponentCapturedListUpdate = true;
+        }
+    }
+
+    private undoCapturedPiece_ApplyList(undoCapturedList : capturedPieces[], undoCapturedPieceInfo : unCapturedPieceInfoType) : capturedPieces[] {
+        const capturedPieceData = undoCapturedPieceInfo.pieceData;
+        
+        const capturedPieceIndex = undoCapturedList.findIndex(
+            capturedPieces => capturedPieces.pieceData.piecesCode === capturedPieceData.piecesCode
+        );
+
+        // リスト内に同一の持ち駒が存在しない場合
+        if (capturedPieceIndex === -1) return [...undoCapturedList];
+        else undoCapturedList[capturedPieceIndex].pieceCount -= 1;
+
+        return [...undoCapturedList.filter((capturedPiece : capturedPieces) => capturedPiece.pieceCount > 0)];
+    }
+
+    undoResignedPiece(undoResignedPieceInfo: unResignedPieceInfoType) : void {
+        const whoOwner = undoResignedPieceInfo.turn === this.user.getUserType() ? "Myself" : "Opponent";
+        const capturedPiecesList = whoOwner === "Myself" ? this.myselfcapturedPiecesList : this.opponentcapturedPiecesList;
+
+        this.board = this.undoResignedPiece_ApplyBoard(this.board as PieceInstance[][], undoResignedPieceInfo);
+        
+        if (whoOwner === "Myself") {
+            this.myselfcapturedPiecesList = this.undoResignedPiece_ApplyList(this.myselfcapturedPiecesList as capturedPieces[], undoResignedPieceInfo);
+            this.didMyselfCapturedListUpdate = true;
+        } else {
+            this.opponentcapturedPiecesList = this.undoResignedPiece_ApplyList(this.opponentcapturedPiecesList as capturedPieces[], undoResignedPieceInfo);
+            this.didOpponentCapturedListUpdate = true;
+        }
+    }
+
+    private undoResignedPiece_ApplyBoard(undoBoard : PieceInstance[][], undoResignedPieceInfo: unResignedPieceInfoType) : PieceInstance[][] {
+        const [x, y] = undoResignedPieceInfo.at;
+        const resignedPieceData = undoResignedPieceInfo.pieceData;
+        const whoOwner = undoResignedPieceInfo.turn === this.user.getUserType() ? "Myself" : "Opponent";
+
+        const newBoard = this.updateBoard(undoBoard);
+
+        newBoard[y][x] = { def: resignedPieceData, owner: whoOwner};  
+        return newBoard;
+    }
+
+    private undoResignedPiece_ApplyList(undoCapturedPiecesList : capturedPieces[], undoResignedPieceInfo: unResignedPieceInfoType) : capturedPieces[] {
+        const capturedPieceData = undoResignedPieceInfo.pieceData;
+
+        const capturedPieceIndex = undoCapturedPiecesList.findIndex(
+            capturedPiecesList => capturedPiecesList.pieceData.piecesCode === capturedPieceData.piecesCode
+        );
+
+        // リスト内に同一の持ち駒が存在しない場合
+        if (capturedPieceIndex === -1) return [...undoCapturedPiecesList, {pieceData : capturedPieceData, pieceCount : 1}];
+
+        // 存在する場合
+        undoCapturedPiecesList[capturedPieceIndex].pieceCount += 1;
+        return [...undoCapturedPiecesList];
+    }
+
     resetAll() : void {
         this.board = initialBoard.map(row => row.map(piece => ({...piece})));;
         this.myselfcapturedPiecesList = [];
@@ -407,6 +508,10 @@ export class GameEngine {
         if (reducer.type === "resetAll") {
             this.resetAll();
         }
+    }
+
+    undoReducer(reducer: gameEventType) : void {
+        
     }
 
     turnChange() : void {

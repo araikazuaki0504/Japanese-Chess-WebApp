@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 
-import { gameEventMessage, ReturngameEventMessage } from "./types/APIType";
+import { gameEventMessage, ReturnGameEventMessage } from "./types/APIType";
 import { InitMessageType, ReturnInitMessageType, ReturnReloadMessageType } from "./types/APIType";
 
 import { GameEngine } from "./game/gameEngine";
@@ -151,16 +151,16 @@ app.post("/gameEvent", (req: express.Request, res: express.Response) => {
     sseManager.notifyOthers(convertedGameEvent.userCode,convertedGameEvent);
     gameEngine.ApplyReducer(convertedGameEvent);
 
-    const returnGameEventMessage : ReturngameEventMessage = {
+    const returnGameEventMessage : ReturnGameEventMessage = {
       ...convertedGameEvent,
       currentTurn : gameEngine.getcurrentTurn(),
       result : result
     }
 
     return res.json(returnGameEventMessage);
-  }else if (convertedGameEvent.type === "undo") {
-    const returnUndoGameEventInfo = gameEngine.undoApplyReducer();
-    sseManager.notifyAll(returnUndoGameEventInfo!);
+  }else if (result && convertedGameEvent.type === "undo") {
+    const returnGameEventMessage : ReturnGameEventMessage = gameEngine.undoApplyReducer();
+    sseManager.notifyAll(returnGameEventMessage);
 
     return res.json({});
   }

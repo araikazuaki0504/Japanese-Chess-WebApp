@@ -33,7 +33,7 @@ export interface gameEventMessage {
     isPromoted? : boolean;
 }
 
-export interface ReturngameEventMessage extends gameEventMessage {
-    currentTurn : "Sente" | "Gote";
+export interface ReturnGameEventMessage extends gameEventMessage {
+    currentTurn : "Sente" | "Gote" | "Spectator";
     result: boolean;
 }
