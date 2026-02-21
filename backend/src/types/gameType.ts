@@ -7,6 +7,7 @@ export interface gameEventType {
     pieceData: PiecesType;
     to? : [number, number];
     from? : [number, number];
+    isPromoted? : boolean;
 }
 
 export interface movePieceInfoType {

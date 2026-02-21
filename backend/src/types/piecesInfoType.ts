@@ -9,6 +9,7 @@ export interface PiecesType {
     imagePath: string;
     move: moveType[];
     toPromotedPieceCode?: number;
+    fromPromotedPieceCode?: number;
 }
 
 export interface capturedPieces {

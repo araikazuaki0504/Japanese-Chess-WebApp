@@ -1,4 +1,5 @@
-import { PieceInstance, lightPieceInstance } from "../const/initialBoard";
+import { PieceInstance, lightPieceInstance, lightCapturedPieceData } from "../const/initialBoard";
+import { capturedPieces } from "../types/piecesInfoType";
 
 const convertMap_sente : Record< "Sente" | "Gote" | "None", "Myself" | "Opponent" | "None" > = { "Sente" : "Myself", "Gote" : "Opponent", "None" : "None" };
 const convertMap_gote : Record< "Sente" | "Gote" | "None", "Myself" | "Opponent" | "None" > = { "Sente" : "Opponent", "Gote" : "Myself", "None" : "None" };
@@ -29,5 +30,11 @@ export const mapBoardToClient = (board : PieceInstance[][], isRotation : boolean
 
         return targetBoard;
     }
+}
 
+export const toLightCapturedPiecesList = (capturedPiecesList : capturedPieces[]) : lightCapturedPieceData[] => {
+  return capturedPiecesList.map(piece => ({
+    pieceCode: piece.pieceData.piecesCode,
+    count: piece.pieceCount
+  }));
 }

@@ -1,7 +1,7 @@
 import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType, capturedPieces, resignedPieceInfoType }  from "../types/gameType";
 import { moveType, PiecesType } from "../types/piecesInfoType";
 
-import { initialBoard, PieceInstance, lightPieceInstance } from "../const/initialBoard";
+import { initialBoard, PieceInstance, lightPieceInstance, lightCapturedPieceData } from "../const/initialBoard";
 import { Blank,piecesData } from "../const/piecesData";
 
 export class GameEngine {
@@ -62,6 +62,8 @@ export class GameEngine {
                 owner: lightPieceData.owner
             }})
         );
+
+        this.didBoardUpdate = true;
     }
 
     static ligthBoardToBoard (lightBoard : lightPieceInstance[][]) : PieceInstance[][] {
@@ -72,6 +74,34 @@ export class GameEngine {
                 owner: lightPieceData.owner
             }})
         );
+    }
+
+    initMyselfCapturedList(lightMyselfCapturedList : lightCapturedPieceData[]) {
+        if (lightMyselfCapturedList.length === 0) return;
+
+        this.myselfcapturedPiecesList = lightMyselfCapturedList.map((lightCapturedPieceData : lightCapturedPieceData) => {
+            return {
+                pieceData: piecesData[lightCapturedPieceData.pieceCode],
+                pieceCount: lightCapturedPieceData.count
+            };
+        });
+
+        this.didMyselfCapturedListUpdate = true;
+    }
+
+    initOpponentCapturedList(lightOpponentCapturedList : lightCapturedPieceData[]) {
+        if (lightOpponentCapturedList.length === 0) return;
+
+        this.opponentcapturedPiecesList = lightOpponentCapturedList.map((lightCapturedPieceData : lightCapturedPieceData) => {
+            return {
+                pieceData: piecesData[lightCapturedPieceData.pieceCode],
+                pieceCount: lightCapturedPieceData.count
+            };
+        });
+
+        console.log(this.opponentcapturedPiecesList);
+
+        this.didOpponentCapturedListUpdate = true;
     }
 
     setuserType(userType : "Sente" | "Gote" | "Spectator") {
@@ -290,8 +320,13 @@ export class GameEngine {
 
         if (reducer.type === "error") return;
 
+        if (reducer.isPromoted === false) { 
+            this.turnChange();
+            return;
+        }
+
         // 移動
-        if (reducer.type === "move" && reducer.to !== undefined && reducer.from !== undefined) {
+        if (reducer.type === "move" && reducer.to !== undefined && reducer.from !== undefined && reducer.pieceData !== undefined) {
             const oldBoard = this.board;
 
             // 新しい盤面へ
@@ -317,11 +352,13 @@ export class GameEngine {
                 isPromoted : true
             });
 
+            this.turnChange();
+
             if (this.board === oldBoard) this.didBoardUpdate = false;
         }
 
         // 駒の取得
-         if (reducer.type === "captured" && reducer.from !== undefined) {
+         if (reducer.type === "captured" && reducer.from !== undefined && reducer.pieceData !== undefined) {
             const oldOpponentCapturedList = this.opponentcapturedPiecesList;
 
             // 新しい相手の持ち駒リストへ
@@ -335,7 +372,7 @@ export class GameEngine {
         }
 
         // 駒を置く
-        if (reducer.type === "resign" && reducer.to !== undefined) {
+        if (reducer.type === "resign" && reducer.to !== undefined && reducer.pieceData !== undefined) {
             const oldBoard = this.board;
             const oldOpponentCapturedList = this.opponentcapturedPiecesList;
 
@@ -347,10 +384,9 @@ export class GameEngine {
 
             if (this.board === oldBoard) this.didBoardUpdate = false;
             if (this.opponentcapturedPiecesList === oldOpponentCapturedList) this.didOpponentCapturedListUpdate = false;
-        }
 
-        // 手番替え
-        this.turnChange();
+            this.turnChange();
+        }
     }
 
     turnChange() : void {

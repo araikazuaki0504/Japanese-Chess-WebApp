@@ -1,15 +1,27 @@
 import { PiecesType } from "./piecesInfoType";
-import { lightPieceInstance } from "../const/initialBoard";
+import { lightCapturedPieceData, lightPieceInstance } from "../const/initialBoard";
 
 export interface InitMessageType {
     type : "init";
     userType : "Sente" | "Gote" | "Spectator";
 }
 
-export interface RetutrnInitMessageType{
+export interface ReturnInitMessageType{
     type : "init";
     userCode : number;
+    currentTurn : "Sente" | "Gote";
     boardData : lightPieceInstance[][];
+    myselfCapturedList : lightCapturedPieceData[];
+    opponentCapturedList : lightCapturedPieceData[];
+};
+
+export interface ReturnReloadMessageType{
+    type : "reload";
+    userCode : number;
+    currentTurn : "Sente" | "Gote";
+    boardData : lightPieceInstance[][];
+    myselfCapturedList : lightCapturedPieceData[];
+    opponentCapturedList : lightCapturedPieceData[];
 };
 
 export interface gameEventMessage {

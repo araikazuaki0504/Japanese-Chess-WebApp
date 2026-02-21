@@ -11,6 +11,11 @@ export interface lightPieceInstance {
     owner : "Myself" | "Opponent" | "None";
 }
 
+export interface lightCapturedPieceData {
+    pieceCode : number;
+    count : number;
+}
+
 export const initialBoard : PieceInstance[][] = [
     [{def: Kyosha, owner: "Opponent"}, {def: Keima, owner: "Opponent"}, {def: GinSho, owner: "Opponent"}, {def: KinSho, owner: "Opponent"}, {def: Osho, owner: "Opponent"}, {def: KinSho, owner: "Opponent"}, {def: GinSho, owner: "Opponent"}, {def: Keima, owner: "Opponent"}, {def: Kyosha, owner: "Opponent"}],
     [{def: Blank, owner: "None"}, {def: Hisha, owner: "Opponent"}, {def: Blank, owner: "None"}, {def: Blank, owner: "None"}, {def: Blank, owner: "None"}, {def: Blank, owner: "None"}, {def: Blank, owner: "None"}, {def: Kaku, owner: "Opponent"}, {def: Blank, owner: "None"}],

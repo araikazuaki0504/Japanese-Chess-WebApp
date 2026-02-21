@@ -5,6 +5,7 @@ import { ReturnGameEventMessageType, ReturnReloadMessageType, RetutrnInitMessage
 
 import { GameEngine } from "../game/gameEngine";
 import { ShogiAPI } from "../shogiAPI/shogiAPI";
+import { Blank, piecesData } from "../const/piecesData";
 
 export function useShogiGame() {
   const { sendInitEvent, sendGameEvent, sendReloadEvent } = ShogiAPI();
@@ -23,10 +24,52 @@ export function useShogiGame() {
 
   // gameの初期化
   const initShogiService = async () : Promise<RetutrnInitMessageType> => {
-        return await sendInitEvent({
-          type : "init",
-          userType : gameEngine.getuserType()
-        });
+      return await sendInitEvent({
+        type : "init",
+        userType : gameEngine.getuserType()
+      });
+  }
+
+  const reload = (returnGameEventMessage : ReturnGameEventMessageType) : void => {
+    const result = returnGameEventMessage.result;
+          
+    // 通信成功時
+    if (result) return;
+
+    // 通信非成功時
+    // 盤面・手番再読み込み
+    sendReloadEvent().then((returnReloadMessage : ReturnReloadMessageType) => {
+      gameEngine.initSetBoard(returnReloadMessage.boardData);
+      gameEngine.initMyselfCapturedList(returnReloadMessage.myselfCapturedList);
+      gameEngine.initOpponentCapturedList(returnReloadMessage.opponentCapturedList);
+
+      if (gameEngine.didUpdateBoard()) setCurrentBoard(gameEngine.getBoard());
+      if (gameEngine.didUpdateMyselfCapturedList()) setMyselfCapturedPiece(gameEngine.getMyselfCapturedList());
+      if (gameEngine.didUpdateOpponentCapturedList()) setOpponentCapturedPiece(gameEngine.getOpponentCapturedList());
+    });
+  };
+
+  const reloadWithTurnChange = (returnGameEventMessage : ReturnGameEventMessageType) => {
+    const result = returnGameEventMessage.result;
+            
+    // 通信成功時
+    if (result) {
+      gameEngine.turnChange();
+      return;
+    };
+
+    // 通信非成功時
+    // 盤面・手番再読み込み
+    sendReloadEvent().then((returnReloadMessage : ReturnReloadMessageType) => {
+      gameEngine.initSetBoard(returnReloadMessage.boardData);
+      gameEngine.setCurrentTurn(returnReloadMessage.currentTurn);
+      gameEngine.initMyselfCapturedList(returnReloadMessage.myselfCapturedList);
+      gameEngine.initOpponentCapturedList(returnReloadMessage.opponentCapturedList);
+
+      if (gameEngine.didUpdateBoard()) setCurrentBoard(gameEngine.getBoard());
+      if (gameEngine.didUpdateMyselfCapturedList()) setMyselfCapturedPiece(gameEngine.getMyselfCapturedList());
+      if (gameEngine.didUpdateOpponentCapturedList()) setOpponentCapturedPiece(gameEngine.getOpponentCapturedList());
+    });
   }
 
   // SSEハンドラ
@@ -41,7 +84,7 @@ export function useShogiGame() {
       scheduledRef.current = false;
 
       if (gameEngine.didUpdateBoard()) setCurrentBoard(gameEngine.getBoard());
-      if (gameEngine.didUpdateMyselfCapturedList()) setMyselfCapturedPiece(gameEngine.getMyselfCapturedList);
+      if (gameEngine.didUpdateMyselfCapturedList()) setMyselfCapturedPiece(gameEngine.getMyselfCapturedList());
       if (gameEngine.didUpdateOpponentCapturedList()) setOpponentCapturedPiece(gameEngine.getOpponentCapturedList());
     });
   };
@@ -61,6 +104,15 @@ export function useShogiGame() {
       gameEngine.userCode = initData.userCode;
       gameEngine.setCurrentTurn(initData.currentTurn);
 
+      console.log(initData)
+
+      gameEngine.initMyselfCapturedList(initData.myselfCapturedList);
+      gameEngine.initOpponentCapturedList(initData.opponentCapturedList);
+
+      if (gameEngine.didUpdateBoard()) setCurrentBoard(gameEngine.getBoard());
+      if (gameEngine.didUpdateMyselfCapturedList()) setMyselfCapturedPiece(gameEngine.getMyselfCapturedList());
+      if (gameEngine.didUpdateOpponentCapturedList()) setOpponentCapturedPiece(gameEngine.getOpponentCapturedList());
+
       es.onmessage = SSE_Handler;
       es.onerror = SEE_ErrorHandler;
 
@@ -71,21 +123,27 @@ export function useShogiGame() {
     });
   }, []);
 
-  const movePiece = useCallback((movePieceInfo: movePieceInfoType) : boolean => {
-      if (!gameEngine.isMyTurn()) return false;
+  const movePiece = useCallback((movePieceInfo: movePieceInfoType) : Promise<boolean> => {
+      if (!gameEngine.isMyTurn()) return Promise.resolve(false);
       const canMove = gameEngine.canMove(movePieceInfo);
 
       if (!canMove) {
-        return false;
+        return Promise.resolve(false);
       }
         
       // 相手の駒がある場合は取る
       if (gameEngine.canCapturedPiece(movePieceInfo)) {
-        const capturedPieceData = gameEngine.getCapturedPieceData(movePieceInfo.to);
+        var capturedPieceData = gameEngine.getCapturedPieceData(movePieceInfo.to);
+        
+        if (capturedPieceData.fromPromotedPieceCode) {
+          const fromPromotedPieceCode = capturedPieceData.fromPromotedPieceCode;
+          capturedPieceData = piecesData[fromPromotedPieceCode];
+        }
+
         gameEngine.myselfCapturedPiece({
             pieceData : capturedPieceData,
             owner : "Myself",
-            at : movePieceInfo.to
+            at : movePieceInfo.from
         });
 
         sendGameEvent({
@@ -93,22 +151,7 @@ export function useShogiGame() {
           userCode : gameEngine.userCode,
           pieceData : capturedPieceData,
           from : movePieceInfo.to
-        }).then((returnGameEventMessage : ReturnGameEventMessageType) => {
-          const result = returnGameEventMessage.result;
-          
-          // 通信成功時
-          if (result) {
-            gameEngine.turnChange();
-            return;
-          };
-
-          // 通信非成功時
-          // 盤面・手番再読み込み
-          sendReloadEvent().then((returnReloadMessage : ReturnReloadMessageType) => {
-            gameEngine.initSetBoard(returnReloadMessage.boardData);
-            gameEngine.setCurrentTurn(returnReloadMessage.currentTurn);
-          });
-        });
+        }).then(reload);
       }
 
       // 移動
@@ -119,22 +162,7 @@ export function useShogiGame() {
         type:"move",
         userCode: gameEngine.userCode ,
         ...movePieceInfo
-      }).then((returnGameEventMessage : ReturnGameEventMessageType) => {
-        const result = returnGameEventMessage.result;
-          
-        // 通信成功時
-        if (result) {
-          gameEngine.turnChange();
-          return;
-        };
-
-        // 通信非成功時
-        // 盤面・手番再読み込み
-        sendReloadEvent().then((returnReloadMessage : ReturnReloadMessageType) => {
-          gameEngine.initSetBoard(returnReloadMessage.boardData);
-          gameEngine.setCurrentTurn(returnReloadMessage.currentTurn);
-        });
-      });
+      }).then(reload);
       
       // Boardを更新するか
       if (gameEngine.didUpdateBoard()) setCurrentBoard(gameEngine.getBoard());
@@ -142,14 +170,22 @@ export function useShogiGame() {
       // 自分の持ち駒を更新するか
       if (gameEngine.didUpdateMyselfCapturedList()) setMyselfCapturedPiece(gameEngine.getMyselfCapturedList());
 
-    return true;
+    return Promise.resolve(true);
   },[]);
 
   const promotedPiece = useCallback((promotedPieceInfo: promotedPieceInfoType) : void => {
     if (!gameEngine.isMyTurn()) return;
-    // 成れるかの判定
-    if (!promotedPieceInfo.isPromoted) return;
-
+    // 成れるかor成らないかの判定
+    if (!promotedPieceInfo.isPromoted || promotedPieceInfo.isPromoted === undefined) {
+      sendGameEvent({
+        type: "promoted",
+        userCode: gameEngine.userCode,
+        pieceData : Blank,
+        isPromoted : false
+      }).then(reloadWithTurnChange);
+      return;
+    };
+    
     gameEngine.promotedPiece(promotedPieceInfo);
 
     // Boardを更新するか
@@ -161,26 +197,11 @@ export function useShogiGame() {
       userCode : gameEngine.userCode,
       pieceData : promotedPieceInfo.pieceData,
       to : promotedPieceInfo.at
-    }).then((returnGameEventMessage : ReturnGameEventMessageType) => {
-        const result = returnGameEventMessage.result;
-          
-        // 通信成功時
-        if (result) {
-          gameEngine.turnChange();
-          return;
-        };
-
-        // 通信非成功時
-        // 盤面・手番再読み込み
-        sendReloadEvent().then((returnReloadMessage : ReturnReloadMessageType) => {
-          gameEngine.initSetBoard(returnReloadMessage.boardData);
-          gameEngine.setCurrentTurn(returnReloadMessage.currentTurn);
-        });
-      });
+    }).then(reloadWithTurnChange);
 
   },[]);
 
-  const resignedPiece = (resignedPieceInfo : resignedPieceInfoType) : void => {
+  const resignedPiece = useCallback((resignedPieceInfo : resignedPieceInfoType) : void => {
     if (!gameEngine.isMyTurn()) return;
     // 置けるか
     if (!gameEngine.canResignedPiece(resignedPieceInfo)) return;
@@ -198,23 +219,8 @@ export function useShogiGame() {
       userCode: gameEngine.userCode ,
       pieceData : resignedPieceInfo.pieceData,
       to: resignedPieceInfo.at
-    }).then((returnGameEventMessage : ReturnGameEventMessageType) => {
-        const result = returnGameEventMessage.result;
-          
-        // 通信成功時
-        if (result) {
-          gameEngine.turnChange();
-          return;
-        };
-
-        // 通信非成功時
-        // 盤面・手番再読み込み
-        sendReloadEvent().then((returnReloadMessage : ReturnReloadMessageType) => {
-          gameEngine.initSetBoard(returnReloadMessage.boardData);
-          gameEngine.setCurrentTurn(returnReloadMessage.currentTurn);
-        });
-      });
-  }
+    }).then(reloadWithTurnChange);
+  },[]);
 
     return { currentBoard, myselfCapturedPiece, opponentCapturedPiece, movePiece, promotedPiece, resignedPiece };
 }

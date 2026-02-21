@@ -95,7 +95,7 @@ export const Kyosha : PiecesType = {
     move: [
         {
             type: "slide",
-            moveRange: [[0, 1]]
+            moveRange: [[0, -1]]
         }
     ],
     toPromotedPieceCode: 14
@@ -127,7 +127,8 @@ export const PROMOTED_HISHA : PiecesType = {
             type: "slide",
             moveRange: [[-1, 0], [0, -1], [0, 1], [1, 0]]
         }
-    ]
+    ],
+    fromPromotedPieceCode: 3
 }
 
 export const PROMOTED_KAKU : PiecesType = {
@@ -143,7 +144,8 @@ export const PROMOTED_KAKU : PiecesType = {
             type: "slide",
             moveRange: [[-1, -1], [-1, 1], [1, -1], [1, 1]]
         }
-    ]
+    ],
+    fromPromotedPieceCode: 4
 }
 
 export const PROMOTED_GINSHO : PiecesType = {
@@ -155,7 +157,8 @@ export const PROMOTED_GINSHO : PiecesType = {
             type: "step",
             moveRange: [[-1, 0], [-1, -1], [0, -1], [1, -1], [1, 0], [0, 1]]
         }
-    ]
+    ],
+    fromPromotedPieceCode: 6
 }
 
 export const PROMOTED_KEIMA : PiecesType = {
@@ -167,7 +170,8 @@ export const PROMOTED_KEIMA : PiecesType = {
             type: "step",
             moveRange: [[-1, 0], [-1, -1], [0, -1], [1, -1], [1, 0], [0, 1]]
         }
-    ]
+    ],
+    fromPromotedPieceCode: 7
 }
 
 export const PROMOTED_KYOUSHA : PiecesType = {
@@ -179,7 +183,8 @@ export const PROMOTED_KYOUSHA : PiecesType = {
             type: "step",
             moveRange: [[-1, 0], [-1, -1], [0, -1], [1, -1], [1, 0], [0, 1]]
         }
-    ]
+    ],
+    fromPromotedPieceCode: 8
 }
 
 export const PROMOTED_FU : PiecesType = {
@@ -191,7 +196,8 @@ export const PROMOTED_FU : PiecesType = {
             type: "step",
             moveRange: [[-1, 0], [-1, -1], [0, -1], [1, -1], [1, 0], [0, 1]]
         }
-    ]
+    ],
+    fromPromotedPieceCode: 9
 }
 
 export const Blank : PiecesType = {

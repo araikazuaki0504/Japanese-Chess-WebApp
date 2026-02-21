@@ -10,7 +10,7 @@ export class GameEngine {
     private goteCapturedPiecesList : capturedPieces[] = [];
     private static BOARD_SIZE: number = 9;
     private currentTurn : "Sente" | "Gote" = "Sente";
-    private otherTurn : "Sente" | "Gote" = (this.currentTurn === "Sente" ? "Gote" : "Sente");
+    private otherTurn : "Sente" | "Gote" = "Gote";
     private userManager : UserManager;
 
     constructor() {
@@ -32,6 +32,10 @@ export class GameEngine {
     getCapturedPieceData(at : [number,number]) : PiecesType {
         const [x,y] = at;
         return this.board[y][x].def;
+    }
+
+    getCapturedPiecesList(userType : "Sente" | "Gote") : capturedPieces[] {
+        return userType === "Sente" ? this.senteCapturedPiecesList : this.goteCapturedPiecesList;
     }
 
     movePiece_ApplyBoard(movePieceInfo: movePieceInfoType) : void{
@@ -109,16 +113,17 @@ export class GameEngine {
             from: gameEvent.from
           });
         case "promoted":
+          if (gameEvent.isPromoted === false) return true;
           if (!gameEvent.to) return false;
           return this.canPromoted({
             pieceData: gameEvent.pieceData,
             at: gameEvent.to
           });
         case "captured":
-          if (!gameEvent.to) return false;
+          if (!gameEvent.from) return false;
           return this.canCapturedPiece({
             pieceData: gameEvent.pieceData,
-            at: gameEvent.to
+            at: gameEvent.from
           });
         case "resign":
           if (!gameEvent.to) return false;
@@ -171,15 +176,20 @@ export class GameEngine {
     }
 
     canPromoted(promotedPieceInfo: promotedPieceInfoType) : boolean {
-        const toY = promotedPieceInfo.at[1];
-        const movePieceData = promotedPieceInfo.pieceData;
+        const [toX, toY] = promotedPieceInfo.at;
+        const ServerPromotedPieceData = this.board[toY][toX].def;
+        const clientPromotedPieceData = promotedPieceInfo.pieceData;
 
-        if (this.currentTurn === "Gote")return toY <= 2 && movePieceData.toPromotedPieceCode !== undefined;
-        else return toY >= 6 && movePieceData.toPromotedPieceCode !== undefined;
+        if (!this.checkPieceData(clientPromotedPieceData, ServerPromotedPieceData)) return false;
+
+        if (this.currentTurn === "Gote")return toY <= 2 && ServerPromotedPieceData.toPromotedPieceCode !== undefined;
+        else return toY >= 6 && ServerPromotedPieceData.toPromotedPieceCode !== undefined;
     }
 
     canCapturedPiece(capturedPieceInfo: capturedPieceInfoType) : boolean{
         const [toX, toY] = capturedPieceInfo.at;
+
+        // if (!this.checkPieceData(capturedPieceInfo.pieceData, this.board[toY][toX].def)) return false;
 
         return this.board[toY][toX].owner === this.otherTurn;
     }
@@ -198,10 +208,15 @@ export class GameEngine {
 
       if (reducer.type === "error") return;
 
-        // 移動
+      if (reducer.isPromoted === false) { 
+            this.turnChange();
+            return;
+      }
+
+      // 移動
       if (reducer.type === "move" && reducer.to !== undefined && reducer.from !== undefined) {
 
-      // 新しい盤面へ
+        // 新しい盤面へ
         this.movePiece_ApplyBoard({
             pieceData : reducer.pieceData,
             to : reducer.to,
@@ -213,6 +228,7 @@ export class GameEngine {
             pieceData : reducer.pieceData,
             at : reducer.to,
         });
+        this.turnChange();
       } else if (reducer.type === "captured" && reducer.from !== undefined) {// 駒の取得
 
         // 新しい相手の持ち駒リストへ
@@ -226,14 +242,19 @@ export class GameEngine {
             pieceData : reducer.pieceData,
             at : reducer.to
         });
+        this.turnChange();
       } else {
         return;
       }
-      
-      // 手番替え
+    }
+
+    // 手番替え
+    turnChange() : void {
       const tmpTurn = this.otherTurn;
       this.otherTurn = this.currentTurn;
       this.currentTurn = tmpTurn;
+
+      console.log("turn changed");
     }
 
     private checkPieceData(clientPieceData : PiecesType, serverPieceData : PiecesType) : boolean {
@@ -250,16 +271,21 @@ export class GameEngine {
     }
 
     static convertServerCoordinate(gameEvent : gameEventType, userType : "Sente" | "Gote") : gameEventType {
-        if (gameEvent.to) gameEvent.to = this.coordinateRotate180(gameEvent.to,userType);
-        if (gameEvent.from) gameEvent.from = this.coordinateRotate180(gameEvent.from, userType);
+      console.log(userType);
+      if (userType === "Gote") return gameEvent;
 
-        return gameEvent;
+      return {
+        ...gameEvent,
+        to: GameEngine.coordinateRotate180(gameEvent.to),
+        from: GameEngine.coordinateRotate180(gameEvent.from)
+      };
     }
 
-    private static coordinateRotate180(coordinate : [number,number], userType : "Sente" | "Gote") : [number,number] {
-        const [x,y] = coordinate;
+    private static coordinateRotate180(coordinate? : [number,number]) : [number,number] | undefined {
+      if (coordinate === undefined) return undefined;
+
+      const [x,y] = coordinate;
         
-        if (userType === "Sente") return [GameEngine.BOARD_SIZE - x - 1, GameEngine.BOARD_SIZE - y - 1];
-        else return coordinate;
+      return [GameEngine.BOARD_SIZE - x - 1, GameEngine.BOARD_SIZE - y - 1];
     }
 }

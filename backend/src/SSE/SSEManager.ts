@@ -76,7 +76,6 @@ export class SSEManager {
   notifyOthers (targetuserID : number, data : SSEMessage) : boolean {
     if (this.clients.size === 0) return false;
 
-
     this.clients.forEach((res : express.Response, userID : number) => {
       if (userID === targetuserID) return;
       const result = res.write(`data: ${JSON.stringify(data)}\n\n`);

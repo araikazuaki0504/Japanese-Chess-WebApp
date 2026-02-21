@@ -2,14 +2,15 @@ import { useState, useRef } from "react";
 
 import { movePieceInfoType, promotedPieceInfoType } from "./types/gameType";
 
-import { Blank, piecesData } from "./const/piecesData";
+import { Blank } from "./const/piecesData";
 import { PieceInstance } from "./const/initialBoard";
+import { PiecesType } from "./types/piecesInfoType";
 import { IsPromotedPopUp } from "./IsPromotedPopOut";
 
 import "./css/ShogiBoard.css";
 
-export default function ShogiBoard({ board, movePiece, promotedPiece, handleResignedPiece } : 
-{ board: ReadonlyArray<ReadonlyArray<PieceInstance>>, movePiece: (movePieceInfo: movePieceInfoType) => boolean, promotedPiece: (promotedPieceInfo: promotedPieceInfoType) => void, handleResignedPiece: (x : number, y : number) => void }) {
+export default function ShogiBoard({ board, movePiece, resignedPieceData, promotedPiece, handleResignedPiece } : 
+{ board: ReadonlyArray<ReadonlyArray<PieceInstance>>, movePiece: (movePieceInfo: movePieceInfoType) => Promise<boolean>, resignedPieceData: React.MutableRefObject<PiecesType | null>, promotedPiece: (promotedPieceInfo: promotedPieceInfoType) => void, handleResignedPiece: (x : number, y : number) => void }) {
   const [canPromoted, setCanPromoted] = useState<boolean>(false);
 
   const PromotedCandidate = useRef<promotedPieceInfoType | null>(null);
@@ -28,13 +29,18 @@ export default function ShogiBoard({ board, movePiece, promotedPiece, handleResi
     if (!selected) {
       if (cell && cell.owner === "Myself") {
         setSelected({ x, y, piece: cell });
+        resignedPieceData.current = null;
       } else if (cell && cell.owner === "None" && cell.def.name === "blank") {
         handleResignedPiece(x,y);
       }
       return;
     } else {
-      if (cell && cell.owner === "Myself") {
+      if (x === selected.x && y === selected.y) {
+        setSelected(null);
+        return;
+      } else if (cell && cell.owner === "Myself") {
         setSelected({ x, y, piece: cell });
+        resignedPieceData.current = null;
         return;
       }
     }
@@ -46,25 +52,37 @@ export default function ShogiBoard({ board, movePiece, promotedPiece, handleResi
     }
 
     // 駒の移動
-    const canMove = movePiece({
+    movePiece({
       pieceData: selected.piece.def,
       owner: "Myself",
       from: [selected.x, selected.y],
       to: [x, y]
-    });
+    }).then((canMove) => {
+      if (!canMove) return;
 
-    // 成り判定
-    if ( y <= 2 && selected.piece.def.toPromotedPieceCode && canMove ) {
-      setCanPromoted(true);
-      PromotedCandidate.current = {
-        pieceData: selected.piece.def,
-        owner: "Myself",
-        at: [x, y],
-        isPromoted: false
-       };
-    }
+      // 成り判定
+      if ( y <= 2 && selected.piece.def.toPromotedPieceCode) {
+        setCanPromoted(true);
+        PromotedCandidate.current = {
+          pieceData: selected.piece.def,
+          owner: "Myself",
+          at: [x, y],
+          isPromoted: false
+        };
+      }　else {
+        setCanPromoted(false);
+        PromotedCandidate.current = null;
 
-    setSelected(null);
+        promotedPiece({
+          pieceData: selected.piece.def,
+          owner: "Myself",
+          at: [x, y],
+          isPromoted: false
+        });
+      }
+
+      setSelected(null);
+      });
   };
 
   const handlePromotion = (isPromoted: boolean) => {
@@ -72,7 +90,7 @@ export default function ShogiBoard({ board, movePiece, promotedPiece, handleResi
       setCanPromoted(false);
       return;
     }
-    
+
     if (PromotedCandidate.current) {
       promotedPiece({
         ...PromotedCandidate.current,

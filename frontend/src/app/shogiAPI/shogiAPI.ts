@@ -46,7 +46,7 @@ export function ShogiAPI() {
     const sendReloadEvent = async () : Promise<ReturnReloadMessageType> => {
         try {
             const res = await fetch("http://localhost:3000/reload", {
-            method: "POST",
+            method: "GET",
             headers: { "Content-Type": "application/json" },
             credentials: "include"
         });

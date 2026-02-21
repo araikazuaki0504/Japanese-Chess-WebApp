@@ -2,12 +2,12 @@ import express from "express";
 import cors from "cors";
 
 import { gameEventMessage, ReturngameEventMessage } from "./types/APIType";
-import { InitMessageType } from "./types/APIType";
+import { InitMessageType, ReturnInitMessageType, ReturnReloadMessageType } from "./types/APIType";
 
 import { GameEngine } from "./game/gameEngine";
 import { SSEManager } from "./SSE/SSEManager";
 import { UserManager } from "./game/UserManager";
-import { mapBoardToClient } from "./game/gameLogic"
+import { mapBoardToClient, toLightCapturedPiecesList } from "./game/gameLogic"
 
 const app = express();
 const gameEngine = new GameEngine();
@@ -24,7 +24,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // 初期情報の取得
-app.post("/init", (req: express.Request, res: express.Response) => {
+app.post("/init", (req: express.Request<InitMessageType>, res: express.Response<ReturnInitMessageType>) => {
   res.setHeader("Content-Type", "application/json");
 
   let userID = req.cookies.userID;
@@ -53,16 +53,21 @@ app.post("/init", (req: express.Request, res: express.Response) => {
   const isRotation : boolean = initMessage.userType === "Sente";
 
   const clientBoard = mapBoardToClient(gameEngine.getBoard(),isRotation);
+  const clientCapturedPiecesList = toLightCapturedPiecesList(gameEngine.getCapturedPiecesList(initMessage.userType as "Sente" | "Gote"));
+  const opponentCapturedPiecesList = toLightCapturedPiecesList(gameEngine.getCapturedPiecesList(initMessage.userType === "Sente" ? "Gote" : "Sente"));
 
   userManager.addUser(initMessage.userType,userID);
+
+  console.log("User connected:", userID, "Type:", initMessage.userType);
 
   return res.json({
     type: "init",
     userCode: userID,
     boardData: clientBoard,
-    currentTurn: gameEngine.getcurrentTurn()
+    currentTurn: gameEngine.getcurrentTurn(),
+    myselfCapturedList : clientCapturedPiecesList,
+    opponentCapturedList : opponentCapturedPiecesList
   });
-    
 });
 
 // リロード(再読み込み)
@@ -76,11 +81,16 @@ app.get("/reload", (req: express.Request, res: express.Response) => {
   const userType = userManager.getUserType(userID);
   const isRotation : boolean = userType === "Sente";
   const clientBoard = mapBoardToClient(gameEngine.getBoard(),isRotation);
+  const clientCapturedPiecesList = toLightCapturedPiecesList(gameEngine.getCapturedPiecesList(userType as "Sente" | "Gote"));
+  const opponentCapturedPiecesList = toLightCapturedPiecesList(gameEngine.getCapturedPiecesList(userType === "Sente" ? "Gote" : "Sente"));
 
   return res.json({
     type: "reload",
+    userCode: userID,
     boardData: clientBoard,
-    currentTurn: gameEngine.getcurrentTurn()
+    currentTurn: gameEngine.getcurrentTurn(),
+    myselfCapturedList : clientCapturedPiecesList,
+    opponentCapturedList : opponentCapturedPiecesList
   });
 });
 
@@ -124,6 +134,7 @@ app.post("/gameEvent", (req: express.Request, res: express.Response) => {
   console.log("result:",result);
   console.log("userType:",UserType);
   console.log("currentTurn",gameEngine.getcurrentTurn());
+  console.log("gameEvent:");
   console.log(convertedGameEvent);
 
   if (result) { 

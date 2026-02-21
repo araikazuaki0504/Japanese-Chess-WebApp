@@ -29,7 +29,7 @@ export default function ShogiWindow() {
   return (
     <div className="shogi-root">
         <ShogiTable owner="opponent" capturedPiecesList={opponentCapturedPiece} resignedPieceData={resignedPieceData} />
-        <ShogiBoard board={currentBoard} movePiece={movePiece} promotedPiece={promotedPiece} handleResignedPiece={handleResignedPiece} />
+        <ShogiBoard board={currentBoard} movePiece={movePiece} promotedPiece={promotedPiece} resignedPieceData={resignedPieceData} handleResignedPiece={handleResignedPiece} />
         <ShogiTable owner="myself" capturedPiecesList={myselfCapturedPiece} resignedPieceData={resignedPieceData} />
     </div>
   );

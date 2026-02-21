@@ -1,5 +1,5 @@
 import { gameEventType, gameEventResultType } from "./gameType";
-import { lightPieceInstance } from "../const/initialBoard"
+import { lightPieceInstance, lightCapturedPieceData  } from "../const/initialBoard"
 
 export interface InitMessageType {
     type : "init";
@@ -9,14 +9,19 @@ export interface InitMessageType {
 export interface RetutrnInitMessageType{
     type : "init";
     userCode : number;
-    boardData : lightPieceInstance[][];
     currentTurn : "Sente" | "Gote";
+    boardData : lightPieceInstance[][];
+    myselfCapturedList : lightCapturedPieceData[];
+    opponentCapturedList : lightCapturedPieceData[];
 };
 
 export interface ReturnReloadMessageType {
-    type : "Reload";
-    boardData : lightPieceInstance[][];
+    type : "reload";
+    userCode : number;
     currentTurn : "Sente" | "Gote";
+    boardData : lightPieceInstance[][];
+    myselfCapturedList : lightCapturedPieceData[];
+    opponentCapturedList : lightCapturedPieceData[];
 }
 
 export type gameEventMessageType = gameEventType;

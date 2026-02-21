@@ -11,13 +11,13 @@ export class UserManager {
         return UserManager.instance;
     }
 
-    getUserID(userType : "Sente" | "Gote" | "Spectator") : number | undefined{
-        return this.userList.get(userType);
+    getUserID(userTypeKey : "Sente" | "Gote" | "Spectator") : number | undefined{
+        return this.userList.get(userTypeKey);
     }
 
-    getUserType(userID : number) : "Sente" | "Gote" | "Spectator" | undefined{
+    getUserType(userIDKey : number) : "Sente" | "Gote" | "Spectator" | undefined{
         for (const [userType, ID] of this.userList) {
-            if (userID === ID) {
+            if (userIDKey === ID) {
                 return userType;
             }
         }

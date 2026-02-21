@@ -10,7 +10,11 @@ export default function ShogiTable({ owner, capturedPiecesList, resignedPieceDat
   const [ selectPieceIndex, setSelectPieceIndex ] = useState<number | null>(null);
 
   const clickPiece = (pieceData : PiecesType, targetPieceIndex : number) => {
-    if (selectPieceIndex === targetPieceIndex) setSelectPieceIndex(null);
+    if (selectPieceIndex === targetPieceIndex) {
+      setSelectPieceIndex(null);
+      return;
+
+    };
 
     resignedPieceData.current = pieceData;
     setSelectPieceIndex(targetPieceIndex);
