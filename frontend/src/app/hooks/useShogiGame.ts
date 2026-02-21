@@ -2,6 +2,7 @@ import { useState ,useEffect, useCallback, useRef } from "react";
 
 import { movePieceInfoType, promotedPieceInfoType, resignedPieceInfoType } from "../types/gameType";
 import { ReturnGameEventMessageType, ReturnReloadMessageType, RetutrnInitMessageType } from "../types/APIType";
+import { SSEMessageType } from "../types/SSE";
 
 import { GameEngine } from "../game/gameEngine";
 import { ShogiAPI } from "../shogiAPI/shogiAPI";
@@ -23,8 +24,7 @@ export function useShogiGame() {
   const [ currentBoard, setCurrentBoard ] = useState(initBoard);
   const [ myselfCapturedPiece, setMyselfCapturedPiece ] = useState(initMyselfCapturedList);
   const [ opponentCapturedPiece, setOpponentCapturedPiece ] = useState(initOpponentCapturedList);
-  const [ currentTurnState, setCurrentTurnState ] = useState<"Sente" | "Gote">(gameEngine['currentTurn']);
-  const [ userTypeState, setUserTypeState ] = useState<"Sente" | "Gote" | "Spectator">(user.getUserType());
+  const [ currentTurnState, setCurrentTurnState ] = useState<"Sente" | "Gote">(gameEngine.getCurrentTurn());
 
   // gameの初期化
   const initShogiService = async () : Promise<RetutrnInitMessageType> => {
@@ -81,7 +81,7 @@ export function useShogiGame() {
 
   // SSEハンドラ
   const SSE_Handler = (message: MessageEvent) => {
-    const gameEvent = JSON.parse(message.data);
+    const gameEvent : SSEMessageType = JSON.parse(message.data);
     gameEngine.ApplyReducer(gameEvent);
 
     if (scheduledRef.current) return;
@@ -112,13 +112,6 @@ export function useShogiGame() {
       gameEngine.initSetBoard(initData.boardData);
       user.setUserCode(initData.userCode);
       gameEngine.setCurrentTurn(initData.currentTurn);
-
-      if ((initData as any).userType) {
-        user.setUserType((initData as any).userType);
-        setUserTypeState((initData as any).userType);
-      } else {
-        setUserTypeState(user.getUserType());
-      }
 
       console.log(initData)
 

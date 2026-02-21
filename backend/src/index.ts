@@ -141,25 +141,30 @@ app.post("/gameEvent", (req: express.Request, res: express.Response) => {
 
   const result = gameEngine.validation(convertedGameEvent);
 
-  console.log("gameEvent");
   console.log("result:",result);
   console.log("userType:",UserType);
   console.log("currentTurn",gameEngine.getcurrentTurn());
   console.log("gameEvent:");
   console.log(convertedGameEvent);
 
-  if (result) { 
+  if (result && convertedGameEvent.type !== "undo") { 
     sseManager.notifyOthers(convertedGameEvent.userCode,convertedGameEvent);
     gameEngine.ApplyReducer(convertedGameEvent);
-  };
 
-  const returnGameEventMessage : ReturngameEventMessage = {
-    ...convertedGameEvent,
-    currentTurn : gameEngine.getcurrentTurn(),
-    result : result
+    const returnGameEventMessage : ReturngameEventMessage = {
+      ...convertedGameEvent,
+      currentTurn : gameEngine.getcurrentTurn(),
+      result : result
+    }
+
+    return res.json(returnGameEventMessage);
+  }else if (convertedGameEvent.type === "undo") {
+    const returnUndoGameEventInfo = gameEngine.undoApplyReducer();
+    sseManager.notifyAll(returnUndoGameEventInfo!);
+
+    return res.json({});
   }
-
-  return res.json(returnGameEventMessage);
+  
 });
 
 app.listen(3000, () => {

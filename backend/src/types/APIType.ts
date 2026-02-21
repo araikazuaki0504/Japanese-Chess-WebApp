@@ -25,7 +25,7 @@ export interface ReturnReloadMessageType{
 };
 
 export interface gameEventMessage {
-    type : "move" | "promoted" | "captured" | "resign" | "resetAll" | "error";
+    type : "move" | "promoted" | "captured" | "resign" | "resetAll" | "undo" | "error";
     userCode : number;
     pieceData? : PiecesType;
     to? : [number, number];

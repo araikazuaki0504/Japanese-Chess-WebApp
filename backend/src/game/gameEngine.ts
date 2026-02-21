@@ -1,6 +1,6 @@
 import { initialBoard, PieceInstance } from "../const/initialBoard";
 import { Blank, piecesData } from "../const/piecesData";
-import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType, resignedPieceInfoType }  from "../types/gameType";
+import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType, resignedPieceInfoType, gameEventHistoryType, unMovePieceInfoType, unPromotedPieceInfoType, unCapturedPieceInfoType, unResignedPieceInfoType, ReturnGameEventType }  from "../types/gameType";
 import { PiecesType, moveType, capturedPieces } from "../types/piecesInfoType";
 import { UserManager } from "./UserManager";
 
@@ -12,6 +12,7 @@ export class GameEngine {
     private currentTurn : "Sente" | "Gote" = "Sente";
     private otherTurn : "Sente" | "Gote" = "Gote";
     private userManager : UserManager;
+    private gameEventHistory : gameEventHistoryType[] = [];
 
     constructor() {
       this.userManager = UserManager.getInstance(); 
@@ -38,6 +39,82 @@ export class GameEngine {
         return userType === "Sente" ? this.senteCapturedPiecesList : this.goteCapturedPiecesList;
     }
 
+    undoMovePiece(undoMovePieceInfo: unMovePieceInfoType) : unMovePieceInfoType {
+        this.undoMovePiece_ApplyBoard(undoMovePieceInfo);
+        return undoMovePieceInfo;
+    }
+
+    undoMovePiece_ApplyBoard(undoMovePieceInfo: unMovePieceInfoType) : void {
+        const [fromX, fromY] = undoMovePieceInfo.from;
+        const [toX, toY] = undoMovePieceInfo.to;
+        const movePieceData = undoMovePieceInfo.pieceData;
+        
+        // 移動
+        this.board[fromY][fromX] = { def: movePieceData, owner: this.currentTurn };
+        this.board[toY][toX] = { def: Blank, owner: "None" };
+    }
+
+    undoPromotedPiece(undoPromotedPieceInfo : unPromotedPieceInfoType) : unPromotedPieceInfoType {
+        this.undoPromotedPiece_ApplyBoard(undoPromotedPieceInfo);
+        return undoPromotedPieceInfo;
+    }
+
+    undoPromotedPiece_ApplyBoard(undoPromotedPieceInfo : unPromotedPieceInfoType) : void {
+        const [x, y] = undoPromotedPieceInfo.at;
+        const unPromotedPieceData = undoPromotedPieceInfo.pieceData;
+
+        this.board[y][x] = { def: unPromotedPieceData, owner: this.currentTurn};
+    }
+
+    undoCapturedPiece(undoCapturedPieceInfo : unCapturedPieceInfoType) : unCapturedPieceInfoType {
+        this.undoCapturedPiece_ApplyList(undoCapturedPieceInfo);
+        return undoCapturedPieceInfo;
+    }
+
+    undoCapturedPiece_ApplyList(undoCapturedPieceInfo : unCapturedPieceInfoType) : void {
+        const capturedPieceData = undoCapturedPieceInfo.pieceData;
+        const capturedPiecesList = this.currentTurn === "Sente" ? this.senteCapturedPiecesList : this.goteCapturedPiecesList;
+
+        const capturedPieceIndex = capturedPiecesList.findIndex(
+            capturedPieces => capturedPieces.pieceData.piecesCode === capturedPieceData.piecesCode
+        );
+
+        // リスト内に同一の持ち駒が存在しない場合
+        if (capturedPieceIndex === -1) return;
+        else capturedPiecesList[capturedPieceIndex].pieceCount -= 1;
+
+        if (this.currentTurn === "Sente") this.senteCapturedPiecesList = capturedPiecesList.filter((capturedPiece : capturedPieces) => capturedPiece.pieceCount > 0);
+        else this.goteCapturedPiecesList = capturedPiecesList.filter((capturedPiece : capturedPieces) => capturedPiece.pieceCount > 0);
+    }
+
+    undoResignedPiece(undoResignedPieceInfo: unResignedPieceInfoType) : unResignedPieceInfoType {
+        this.undoResignedPiece_ApplyBoard(undoResignedPieceInfo);
+        this.undoResignedPiece_ApplyList(undoResignedPieceInfo);
+        return undoResignedPieceInfo;
+    }
+
+    private undoResignedPiece_ApplyBoard(undoResignedPieceInfo: unResignedPieceInfoType) : void {
+        const [x, y] = undoResignedPieceInfo.at;
+        const resignedPieceData = undoResignedPieceInfo.pieceData;
+
+        this.board[y][x] = { def: resignedPieceData, owner: this.currentTurn};  
+    }
+
+    private undoResignedPiece_ApplyList(undoResignedPieceInfo: unResignedPieceInfoType) : void {
+        const capturedPieceData = undoResignedPieceInfo.pieceData;
+        const capturedPiecesList = this.currentTurn === "Sente" ? this.senteCapturedPiecesList : this.goteCapturedPiecesList;
+
+        const capturedPieceIndex = capturedPiecesList.findIndex(
+            capturedPiecesList => capturedPiecesList.pieceData.piecesCode === capturedPieceData.piecesCode
+        );
+
+        // リスト内に同一の持ち駒が存在しない場合
+        if (capturedPieceIndex === -1) return;
+
+        // 存在する場合
+        capturedPiecesList[capturedPieceIndex].pieceCount += 1;
+    }
+
     movePiece_ApplyBoard(movePieceInfo: movePieceInfoType) : void{
         const [fromX, fromY] = movePieceInfo.from;
         const [toX, toY] = movePieceInfo.to;
@@ -53,7 +130,7 @@ export class GameEngine {
         const promotedPieceData = promotedPieceInfo.pieceData;
 
         const promotedPieceCode = promotedPieceData.toPromotedPieceCode!;
-        const promotedPieceDef = piecesData.find(piece => piece.piecesCode === promotedPieceCode);
+        const promotedPieceDef = piecesData[promotedPieceCode];
         
         this.board[y][x] = { def: promotedPieceDef!, owner: this.currentTurn};
     }
@@ -103,6 +180,7 @@ export class GameEngine {
 
     resetAll() : void {
         this.board = initialBoard.map(row => row.map(piece => ({...piece})));
+        this.gameEventHistory = [];
         this.senteCapturedPiecesList = [];
         this.goteCapturedPiecesList = [];
         this.currentTurn = "Sente";
@@ -111,6 +189,7 @@ export class GameEngine {
 
     validation(gameEvent : gameEventType) : boolean {
       if (gameEvent.type === "resetAll") return true;
+      else if (gameEvent.type === "undo") return true;
       if (this.userManager.getUserType(gameEvent.userCode) !== this.currentTurn) return false;
 
       switch(gameEvent.type) {
@@ -213,14 +292,7 @@ export class GameEngine {
       // ユーザーID取得
       const userID = this.userManager.getUserID(this.currentTurn as "Sente" | "Gote" | "Spectator")
 
-      if (reducer.userCode !== userID) return;
-
       if (reducer.type === "error") return;
-
-      if (reducer.isPromoted === false) { 
-            this.turnChange();
-            return;
-      }
 
       // 移動
       if (reducer.type === "move" && reducer.to !== undefined && reducer.from !== undefined && reducer.pieceData) {
@@ -238,7 +310,9 @@ export class GameEngine {
             at : reducer.to,
         });
         this.turnChange();
-      } else if (reducer.type === "captured" && reducer.from !== undefined && reducer.pieceData) {// 駒の取得
+      } else if (reducer.isPromoted === false) {
+        this.turnChange(); //空のPromotedイベント(Promotedが送られてきたらそのターンは終了)
+      }else if (reducer.type === "captured" && reducer.from !== undefined && reducer.pieceData) {// 駒の取得
 
         // 新しい相手の持ち駒リストへ
         this.capturedPiece_ApplyList({
@@ -258,6 +332,92 @@ export class GameEngine {
       } else {
         return;
       }
+
+      // 履歴に追加
+      this.gameEventHistory.push({
+        type: reducer.type,
+        turn: this.currentTurn,
+        pieceCode: reducer.pieceData?.piecesCode!,
+        to: reducer.to,
+        from: reducer.from
+      });
+    }
+
+    undoApplyReducer() : ReturnGameEventType | undefined {
+
+      const lastEvent = this.getGameEventHistory();
+      const PieceData = piecesData[lastEvent.pieceCode];
+
+      switch(lastEvent.type) {
+        case "move":
+          this.undoMovePiece({
+            pieceData: PieceData!,
+            turn: lastEvent.turn,
+            to: lastEvent.to!,
+            from: lastEvent.from!
+          });
+
+          return ({
+            type: "undo",
+            userCode: 0, // userCodeは特に意味を持たないため0を返す
+            to: lastEvent.to,
+            from: lastEvent.from,
+            pieceData: PieceData!,
+            currentTurn: lastEvent.turn,
+            result: true
+          });
+        case "promoted":
+          this.undoPromotedPiece({
+            pieceData: PieceData!,
+            turn: lastEvent.turn,
+            at: lastEvent.to!
+          });
+          
+          return ({
+            type: "undo",
+            userCode: 0, // userCodeは特に意味を持たないため0を返す
+            to: lastEvent.to,
+            pieceData: PieceData!,
+            currentTurn: lastEvent.turn,
+            result: true
+          });
+        case "captured":
+          this.undoCapturedPiece({
+            pieceData: PieceData!,
+            turn: lastEvent.turn,
+            at: lastEvent.from!
+          });
+          
+          return({
+            type: "undo",
+            userCode: 0, // userCodeは特に意味を持たないため0を返す
+            from: lastEvent.from,
+            pieceData: PieceData!,
+            currentTurn: lastEvent.turn,
+            result: true
+          });
+        case "resign":
+          this.undoResignedPiece({
+            pieceData: PieceData!,
+            turn: lastEvent.turn,
+            at: lastEvent.to!
+          });
+          
+          return({
+            type: "undo",
+            userCode: 0, // userCodeは特に意味を持たないため0を返す
+            to: lastEvent.to,
+            pieceData: PieceData!,
+            currentTurn: lastEvent.turn,
+            result: true
+          });
+      }
+
+      return;
+    }
+
+    private getGameEventHistory() : gameEventHistoryType {
+      return this.gameEventHistory.pop()!;
     }
 
     // 手番替え
