@@ -27,4 +27,16 @@ export class User {
     getUserCode(): number {
         return this.userCode;
     }
+
+    changeOwner(currentTurn: "Sente" | "Gote") : "Myself" | "Opponent" {
+        if (this.userType === "Spectator" || this.userType === "Gote") 
+            return currentTurn === "Gote" ? "Myself" : "Opponent";
+        else return currentTurn === "Sente" ? "Myself" : "Opponent";
+    }
+
+    changeOtherOwner(currentTurn: "Sente" | "Gote") : "Myself" | "Opponent" {
+        if (this.userType === "Spectator" || this.userType === "Gote") 
+            return currentTurn === "Sente" ? "Myself" : "Opponent";
+        else return this.userType === "Sente" ? "Opponent" : "Myself";
+    }
 }

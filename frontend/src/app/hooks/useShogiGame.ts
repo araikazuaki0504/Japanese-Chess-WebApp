@@ -8,6 +8,7 @@ import { GameEngine } from "../game/gameEngine";
 import { ShogiAPI } from "../shogiAPI/shogiAPI";
 import { Blank, piecesData } from "../const/piecesData";
 import { User } from "../user/user";
+import { PiecesType } from "../types/piecesInfoType";
 
 export function useShogiGame() {
   const { sendInitEvent, sendGameEvent, sendReloadEvent } = ShogiAPI();
@@ -50,6 +51,7 @@ export function useShogiGame() {
       if (gameEngine.didUpdateBoard()) setCurrentBoard(gameEngine.getBoard());
       if (gameEngine.didUpdateMyselfCapturedList()) setMyselfCapturedPiece(gameEngine.getMyselfCapturedList());
       if (gameEngine.didUpdateOpponentCapturedList()) setOpponentCapturedPiece(gameEngine.getOpponentCapturedList());
+      if (gameEngine.didUpdateTurn()) setCurrentTurnState(gameEngine.getCurrentTurn());
     });
   };
 
@@ -82,7 +84,8 @@ export function useShogiGame() {
   // SSEハンドラ
   const SSE_Handler = (message: MessageEvent) => {
     const gameEvent : SSEMessageType = JSON.parse(message.data);
-    gameEngine.ApplyReducer(gameEvent);
+    if (gameEvent.type !== "undo")gameEngine.ApplyReducer(gameEvent);
+    else gameEngine.undoApplyReducer(gameEvent);
 
     if (scheduledRef.current) return;
 
@@ -250,7 +253,23 @@ export function useShogiGame() {
     }
   },[]);
 
-  const undoPiece = useCallback(() : void => {},[]);
+  const undoPiece = useCallback(() : void => {
+      sendGameEvent({
+        type: "undo",
+        userCode: user.getUserCode(),
+      });
+  },[]);
+
+  const addPiece = useCallback((pieceData : PiecesType, to : [number, number]) => {
+    if (user.getUserType() !== "Spectator") return;
+
+      sendGameEvent({
+        type: "addPiece",
+        userCode: user.getUserCode(),
+        pieceData,
+        to
+      }).then(reload);
+  },[]);
 
     return { currentBoard, myselfCapturedPiece, opponentCapturedPiece, movePiece, promotedPiece, resignedPiece, resetAll, undoPiece, currentTurn: currentTurnState };
 }

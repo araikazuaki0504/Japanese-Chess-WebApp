@@ -185,7 +185,7 @@ export class GameEngine {
 
     validation(gameEvent : gameEventType) : boolean {
       if (gameEvent.type === "resetAll") return true;
-      else if (gameEvent.type === "undo") return true;
+      else if (gameEvent.type === "undo" && this.gameEventHistory.length > 0) return true;
       if (this.userManager.getUserType(gameEvent.userCode) !== this.currentTurn) return false;
 
       switch(gameEvent.type) {
@@ -339,8 +339,15 @@ export class GameEngine {
       });
     }
 
-    undoApplyReducer() : ReturnGameEventType {
+    undoApplyReducer() : gameEventType[] {
+      if (this.gameEventHistory.length === 0) {
+        return [];
+       }
+
       const oneTurnGameHistory : gameEventHistoryType[] = [];
+
+      // 成りイベント取得
+      oneTurnGameHistory.push(this.gameEventHistory.pop()!);
 
       // 直近の1ターン分のイベントを取得
       while (this.gameEventHistory.length > 0) {
@@ -356,12 +363,9 @@ export class GameEngine {
         }
       }
 
-      const undoEvent : ReturnGameEventType = {
-        type: "undo",
-        userCode: -1, // undoイベントには特定のユーザーコードはないため、-1(サーバーコード)を使用
-        currentTurn: oneTurnGameHistory[0].turn, 
-        result: true
-      };
+      console.log("one turn game event history", oneTurnGameHistory);
+
+      const undoEvent : gameEventType[] = [];
 
       oneTurnGameHistory.forEach((lastEvent : gameEventHistoryType) => {
         const PieceData = piecesData[lastEvent.pieceCode];
@@ -374,16 +378,35 @@ export class GameEngine {
               from: lastEvent.from!
             });
 
-            undoEvent.from = lastEvent.from;
+            undoEvent.push({
+              type: "undo",
+              userCode: -1, // undoイベントには特定のユーザーコードはないため、-1(サーバーコード)を使用
+              pieceData: PieceData,
+              to: lastEvent.to,
+              from: lastEvent.from, 
+              turn: lastEvent.turn
+            });
             break;
           case "promoted":
-            this.undoPromotedPiece({
-              pieceData: PieceData!,
+            if (lastEvent.to) { // 空イベントは無視
+              this.undoPromotedPiece({
+                pieceData: PieceData!,
+                turn: lastEvent.turn,
+                at: lastEvent.to!
+              });
+            }
+            
+            undoEvent.push({
+              type: "undo",
+              userCode: -1,
+              pieceData: PieceData,
+              to: lastEvent.to,
+              from: undefined,
               turn: lastEvent.turn,
-              at: lastEvent.to!
+              isPromoted: true
             });
 
-            undoEvent.to = lastEvent.to;
+            this.turnChange(); // 成りイベントのundoは手番も戻す必要があるため、ここで手番を戻す
             break;
           case "captured":
             this.undoCapturedPiece({
@@ -392,7 +415,14 @@ export class GameEngine {
               at: lastEvent.from!
             });
 
-            undoEvent.pieceData = PieceData;
+            undoEvent.push({
+              type: "undo",
+              userCode: -1,
+              pieceData: PieceData,
+              to: undefined,
+              from: lastEvent.from,
+              turn: lastEvent.turn
+            });
             break;
           case "resign":
             this.undoResignedPiece({
@@ -401,8 +431,16 @@ export class GameEngine {
               at: lastEvent.to!
             });
 
-            undoEvent.pieceData = PieceData;
-            undoEvent.to = lastEvent.to;
+            undoEvent.push({
+              type: "undo",
+              userCode: -1,
+              pieceData: PieceData,
+              to: lastEvent.to,
+              from: undefined,
+              turn: lastEvent.turn
+            });
+
+            this.turnChange(); // 駒を置くイベントのundoは手番も戻す必要があるため、ここで手番を戻す
             break;
         }
       });

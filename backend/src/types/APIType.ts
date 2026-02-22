@@ -31,6 +31,7 @@ export interface gameEventMessage {
     to? : [number, number];
     from? : [number, number];
     isPromoted? : boolean;
+    turn? : "Sente" | "Gote";
 }
 
 export interface ReturnGameEventMessage extends gameEventMessage {

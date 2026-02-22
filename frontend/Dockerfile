@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
@@ -8,5 +8,4 @@ RUN npm install --include=dev
 COPY . .
 
 EXPOSE 5173
-
 CMD ["npm", "run", "dev"]

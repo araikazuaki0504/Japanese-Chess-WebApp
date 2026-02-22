@@ -53,7 +53,7 @@ export const Kaku : PiecesType = {
 export const KinSho : PiecesType = {
     name: "金将",
     piecesCode: 5,
-    imagePath: "../assets/KinSho.png",
+    imagePath: "../assets/Kinsho.png",
     move: [
         {
             type: "step",
@@ -65,7 +65,7 @@ export const KinSho : PiecesType = {
 export const GinSho : PiecesType = {
     name: "銀将",
     piecesCode: 6,
-    imagePath: "../assets/GinSho.png",
+    imagePath: "../assets/Ginsho.png",
     move: [
         {
             type: "step",

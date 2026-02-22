@@ -9,6 +9,7 @@ import { SSEManager } from "./SSE/SSEManager";
 import { UserManager } from "./game/UserManager";
 import { GameEventManager } from "./SSE/gameEventManager";
 import { mapBoardToClient, toLightCapturedPiecesList } from "./game/gameLogic"
+import { gameEventType } from "./types/gameType";
 
 const app = express();
 const gameEngine = new GameEngine();
@@ -159,8 +160,11 @@ app.post("/gameEvent", (req: express.Request, res: express.Response) => {
 
     return res.json(returnGameEventMessage);
   }else if (result && convertedGameEvent.type === "undo") {
-    const returnGameEventMessage : ReturnGameEventMessage = gameEngine.undoApplyReducer();
-    sseManager.notifyAll(returnGameEventMessage);
+    const gameEventMessages : gameEventType[] = gameEngine.undoApplyReducer();
+
+    for (const gameEventMessage of gameEventMessages) {
+      sseManager.notifyAll(gameEventMessage);
+    }
 
     return res.json({});
   }

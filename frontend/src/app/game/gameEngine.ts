@@ -1,4 +1,4 @@
-import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType, capturedPieces, resignedPieceInfoType,unMovePieceInfoType, unPromotedPieceInfoType, unCapturedPieceInfoType, unResignedPieceInfoType }  from "../types/gameType";
+import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType, capturedPieces, resignedPieceInfoType,unMovePieceInfoType, unPromotedPieceInfoType, unCapturedPieceInfoType, unResignedPieceInfoType, addPieceInfoType }  from "../types/gameType";
 import { moveType, PiecesType } from "../types/piecesInfoType";
 
 import { initialBoard, PieceInstance, lightPieceInstance, lightCapturedPieceData } from "../const/initialBoard";
@@ -267,10 +267,11 @@ export class GameEngine {
     }
 
     private undoMovePiece_ApplyBoard(undoBoard :PieceInstance[][], undoMovePieceInfo: unMovePieceInfoType) : PieceInstance[][] {
+        console.log("undo move piece info:", undoMovePieceInfo);
         const [fromX, fromY] = undoMovePieceInfo.from;
         const [toX, toY] = undoMovePieceInfo.to;
         const movePieceData = undoMovePieceInfo.pieceData;
-        const whoOwner = undoMovePieceInfo.turn === this.user.getUserType() ? "Myself" : "Opponent";
+        const whoOwner = this.user.changeOwner(undoMovePieceInfo.turn);
         
         const newBoard = this.updateBoard(undoBoard);
 
@@ -287,18 +288,21 @@ export class GameEngine {
     private undoPromotedPiece_ApplyBoard(undoBoard : PieceInstance[][], undoPromotedPieceInfo : unPromotedPieceInfoType) : PieceInstance[][] {
         const [x, y] = undoPromotedPieceInfo.at;
         const unPromotedPieceData = undoPromotedPieceInfo.pieceData;
-        const whoOwner = undoPromotedPieceInfo.turn === this.user.getUserType() ? "Myself" : "Opponent";
+        const whoOwner = this.user.changeOwner(undoPromotedPieceInfo.turn);
 
         const newBoard = this.updateBoard(undoBoard);
-
 
         newBoard[y][x] = { def: unPromotedPieceData, owner: whoOwner};
         return newBoard;
     }
 
     undoCapturedPiece(undoCapturedPieceInfo : unCapturedPieceInfoType) : void {
-        const whoOwner = undoCapturedPieceInfo.turn === this.user.getUserType() ? "Myself" : "Opponent";
+        const whoOwner = this.user.changeOwner(undoCapturedPieceInfo.turn);
         
+        console.log("undo captured piece info:", undoCapturedPieceInfo);
+
+        this.board = this.undoCapturedPiece_ApplyBoard(this.board as PieceInstance[][], undoCapturedPieceInfo);
+
         if (whoOwner === "Myself") {
             this.myselfcapturedPiecesList = this.undoCapturedPiece_ApplyList(this.myselfcapturedPiecesList as capturedPieces[], undoCapturedPieceInfo);
             this.didMyselfCapturedListUpdate = true;
@@ -306,6 +310,17 @@ export class GameEngine {
             this.opponentcapturedPiecesList = this.undoCapturedPiece_ApplyList(this.opponentcapturedPiecesList as capturedPieces[], undoCapturedPieceInfo);
             this.didOpponentCapturedListUpdate = true;
         }
+    }
+
+    private undoCapturedPiece_ApplyBoard(undoBoard : PieceInstance[][], undoCapturedPieceInfo : unCapturedPieceInfoType) : PieceInstance[][] {
+        const [x, y] = undoCapturedPieceInfo.at;
+        const capturedPieceData = undoCapturedPieceInfo.pieceData;
+        const whoOwner = this.user.changeOtherOwner(undoCapturedPieceInfo.turn);
+        
+        const newBoard = this.updateBoard(undoBoard);
+        
+        newBoard[y][x] = { def: capturedPieceData, owner: whoOwner};
+        return newBoard;
     }
 
     private undoCapturedPiece_ApplyList(undoCapturedList : capturedPieces[], undoCapturedPieceInfo : unCapturedPieceInfoType) : capturedPieces[] {
@@ -323,8 +338,7 @@ export class GameEngine {
     }
 
     undoResignedPiece(undoResignedPieceInfo: unResignedPieceInfoType) : void {
-        const whoOwner = undoResignedPieceInfo.turn === this.user.getUserType() ? "Myself" : "Opponent";
-        const capturedPiecesList = whoOwner === "Myself" ? this.myselfcapturedPiecesList : this.opponentcapturedPiecesList;
+        const whoOwner = this.user.changeOwner(undoResignedPieceInfo.turn);
 
         this.board = this.undoResignedPiece_ApplyBoard(this.board as PieceInstance[][], undoResignedPieceInfo);
         
@@ -339,12 +353,10 @@ export class GameEngine {
 
     private undoResignedPiece_ApplyBoard(undoBoard : PieceInstance[][], undoResignedPieceInfo: unResignedPieceInfoType) : PieceInstance[][] {
         const [x, y] = undoResignedPieceInfo.at;
-        const resignedPieceData = undoResignedPieceInfo.pieceData;
-        const whoOwner = undoResignedPieceInfo.turn === this.user.getUserType() ? "Myself" : "Opponent";
 
         const newBoard = this.updateBoard(undoBoard);
 
-        newBoard[y][x] = { def: resignedPieceData, owner: whoOwner};  
+        newBoard[y][x] = { def: Blank, owner: "None"};  
         return newBoard;
     }
 
@@ -373,6 +385,22 @@ export class GameEngine {
         this.didMyselfCapturedListUpdate = true;
         this.didOpponentCapturedListUpdate = true;
     }
+
+    addPiece(addPieceInfo: addPieceInfoType) : void {
+        this.board = this.addPiece_ApplyBoard(this.board as PieceInstance[][], addPieceInfo);
+    }
+
+    private addPiece_ApplyBoard(board :PieceInstance[][], addPieceInfo: addPieceInfoType) : PieceInstance[][] {
+        const [toX, toY] = addPieceInfo.to;
+        const owner = this.user.changeOwner(addPieceInfo.owner);
+
+        const newBoard = this.updateBoard(board);
+
+        newBoard[toY][toX] = { def: addPieceInfo.pieceData, owner: owner };
+
+        return newBoard;
+    }
+        
 
     canMove(movePieceInfo: movePieceInfoType) : boolean {
         const [fromX, fromY] = movePieceInfo.from;
@@ -508,10 +536,61 @@ export class GameEngine {
         if (reducer.type === "resetAll") {
             this.resetAll();
         }
+
+        // 任意の駒を追加
+        if (reducer.type === "addPiece" && reducer.to !== undefined && reducer.pieceData !== undefined && reducer.turn !== undefined) {
+            const oldBoard = this.board;
+
+            this.addPiece({
+                pieceData : reducer.pieceData,
+                owner : reducer.turn,
+                to : this.coordinateRotate180(reducer.to)
+             });
+
+             if (this.board === oldBoard) this.didBoardUpdate = false;
+        }
     }
 
-    undoReducer(reducer: gameEventType) : void {
-        
+    undoApplyReducer(reducer: gameEventType) : void {
+        if (reducer.type !== "undo") return;
+
+        console.log("undo reducer:", reducer);
+
+        if (reducer.to && reducer.from && reducer.pieceData) {
+            this.undoMovePiece({
+                pieceData : reducer.pieceData,
+                turn : reducer.turn!,
+                to : this.user.getUserType() === "Sente" ? this.coordinateRotate180(reducer.to) : reducer.to,
+                from : this.user.getUserType() === "Sente" ? this.coordinateRotate180(reducer.from) : reducer.from
+            });
+
+            this.turnChange();
+            return;
+        } else if (reducer.to && !reducer.from && reducer.pieceData && reducer.isPromoted) {
+            this.undoPromotedPiece({
+                pieceData : reducer.pieceData,
+                turn : reducer.turn!,
+                at : this.user.getUserType() === "Sente" ? this.coordinateRotate180(reducer.to) : reducer.to
+            });
+
+            return;
+        } else if (!reducer.to && reducer.from && reducer.pieceData && !reducer.isPromoted) {
+            this.undoCapturedPiece({
+                pieceData : reducer.pieceData,
+                turn : reducer.turn!,
+                at : this.user.getUserType() === "Sente" ? this.coordinateRotate180(reducer.from) : reducer.from
+            });
+            return;
+        } else if (reducer.to && !reducer.from && reducer.pieceData && !reducer.isPromoted) {
+            this.undoResignedPiece({
+                pieceData : reducer.pieceData,
+                turn : reducer.turn!,
+                at : this.user.getUserType() === "Sente" ? this.coordinateRotate180(reducer.to) : reducer.to
+            });
+
+            this.turnChange();
+            return;
+        }
     }
 
     turnChange() : void {

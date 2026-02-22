@@ -1,12 +1,13 @@
 import { PiecesType } from "./piecesInfoType";
 
 export interface gameEventType {
-    type: "move" | "promoted" | "captured" | "resign" | "resetAll" | "error";
+    type: "move" | "promoted" | "captured" | "resign" | "resetAll" | "undo" | "addPiece" | "error";
     userCode: number;
     pieceData?: PiecesType;
     to? : [number, number];
     from? : [number, number];
     isPromoted? : boolean;
+    turn? : "Sente" | "Gote";
 }
 
 export interface gameEventResultType extends gameEventType{
@@ -68,4 +69,10 @@ export interface unResignedPieceInfoType {
     pieceData: PiecesType;
     turn : "Sente" | "Gote";
     at : [number, number];
+}
+
+export interface addPieceInfoType {
+    pieceData: PiecesType;
+    to : [number, number];
+    owner : "Sente" | "Gote";
 }
