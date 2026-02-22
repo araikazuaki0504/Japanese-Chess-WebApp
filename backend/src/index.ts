@@ -19,7 +19,7 @@ const gameEventManager = new GameEventManager();
 const cookieParser = require('cookie-parser')
 
 app.use(cors({
-  origin: "http://localhost:5173", // クライアントのURL
+  origin: "http://133.242.148.242:5173", // クライアントのURL
   credentials: true
 }));
 
