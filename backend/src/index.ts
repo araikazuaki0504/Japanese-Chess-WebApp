@@ -171,6 +171,6 @@ app.post("/gameEvent", (req: express.Request, res: express.Response) => {
   
 });
 
-app.listen(3000, () => {
+app.listen(3000, "133.242.148.242", () => {
   console.log("Shogi server listening on :3000");
 });
