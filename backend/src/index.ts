@@ -149,8 +149,8 @@ app.post("/gameEvent", (req: express.Request, res: express.Response) => {
   console.log(convertedGameEvent);
 
   if (result && convertedGameEvent.type !== "undo") { 
-    sseManager.notifyOthers(convertedGameEvent.userCode,convertedGameEvent);
     gameEngine.ApplyReducer(convertedGameEvent);
+    sseManager.notifyOthers(convertedGameEvent.userCode,convertedGameEvent);
 
     const returnGameEventMessage : ReturnGameEventMessage = {
       ...convertedGameEvent,

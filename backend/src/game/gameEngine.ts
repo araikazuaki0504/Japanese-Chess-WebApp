@@ -298,9 +298,6 @@ export class GameEngine {
     }
 
     ApplyReducer(reducer: gameEventType) : void {
-      // ユーザーID取得
-      const userID = this.userManager.getUserID(this.currentTurn as "Sente" | "Gote" | "Spectator")
-
       if (reducer.type === "error") return;
 
       // 移動

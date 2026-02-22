@@ -162,7 +162,8 @@ export function useShogiGame() {
           type : "captured",
           userCode : user.getUserCode(),
           pieceData : capturedPieceData,
-          from : movePieceInfo.to
+          from : movePieceInfo.to,
+          turn: user.getUserType() === "Spectator" ? "Gote" : undefined
         }).then(reload);
       }
 
@@ -172,8 +173,9 @@ export function useShogiGame() {
       // サーバーへの通信
       sendGameEvent({
         type:"move",
-        userCode: user.getUserCode() ,
-        ...movePieceInfo
+        userCode: user.getUserCode(),
+        ...movePieceInfo,
+        turn: user.getUserType() === "Spectator" ? "Gote" : undefined
       }).then(reload);
       
       // Boardを更新するか
@@ -193,7 +195,8 @@ export function useShogiGame() {
         type: "promoted",
         userCode: user.getUserCode(),
         pieceData : Blank,
-        isPromoted : false
+        isPromoted : false,
+        turn: user.getUserType() === "Spectator" ? "Gote" : undefined
       }).then(reloadWithTurnChange);
       return;
     };
@@ -208,7 +211,8 @@ export function useShogiGame() {
       type : "promoted",
       userCode : user.getUserCode(),
       pieceData : promotedPieceInfo.pieceData,
-      to : promotedPieceInfo.at
+      to : promotedPieceInfo.at,
+      turn: user.getUserType() === "Spectator" ? "Gote" : undefined
     }).then(reloadWithTurnChange);
 
   },[]);

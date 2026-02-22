@@ -494,7 +494,7 @@ export class GameEngine {
             // 新しい盤面へ
             this.movePiece({
                 pieceData : reducer.pieceData,
-                owner : "Opponent",
+                owner : reducer.turn ? this.user.changeOtherOwner(reducer.turn) : "Opponent",
                 to : this.coordinateRotate180(reducer.to),
                 from : this.coordinateRotate180(reducer.from)
             });
@@ -509,7 +509,7 @@ export class GameEngine {
             // 新しい盤面へ
             this.promotedPiece({
                 pieceData : reducer.pieceData,
-                owner : "Opponent",
+                owner : reducer.turn ? this.user.changeOtherOwner(reducer.turn) : "Opponent",
                 at : this.coordinateRotate180(reducer.to),
                 isPromoted : true
             });
@@ -526,7 +526,7 @@ export class GameEngine {
             // 新しい相手の持ち駒リストへ
             this.opponentCapturedPiece({
                 pieceData : reducer.pieceData,
-                owner : "Opponent",
+                owner : reducer.turn ? this.user.changeOtherOwner(reducer.turn) : "Opponent",
                 at : this.coordinateRotate180(reducer.from)
             });
 
@@ -540,7 +540,7 @@ export class GameEngine {
 
             this.resignedPiece({
                 pieceData : reducer.pieceData,
-                owner : "Opponent",
+                owner : reducer.turn ? this.user.changeOtherOwner(reducer.turn) : "Opponent",
                 at : this.coordinateRotate180(reducer.to)
             });
 
