@@ -1,6 +1,6 @@
 import { useState ,useEffect, useCallback, useRef } from "react";
 
-import { movePieceInfoType, promotedPieceInfoType, resignedPieceInfoType } from "../types/gameType";
+import { movePieceInfoType, promotedPieceInfoType, resignedPieceInfoType, addPieceInfoType } from "../types/gameType";
 import { ReturnGameEventMessageType, ReturnReloadMessageType, RetutrnInitMessageType } from "../types/APIType";
 import { SSEMessageType } from "../types/SSE";
 
@@ -8,7 +8,6 @@ import { GameEngine } from "../game/gameEngine";
 import { ShogiAPI } from "../shogiAPI/shogiAPI";
 import { Blank, piecesData } from "../const/piecesData";
 import { User } from "../user/user";
-import { PiecesType } from "../types/piecesInfoType";
 
 export function useShogiGame() {
   const { sendInitEvent, sendGameEvent, sendReloadEvent } = ShogiAPI();
@@ -260,16 +259,34 @@ export function useShogiGame() {
       });
   },[]);
 
-  const addPiece = useCallback((pieceData : PiecesType, to : [number, number]) => {
+  const addPiece = useCallback((addPieceInfo : addPieceInfoType) => {
     if (user.getUserType() !== "Spectator") return;
 
+    if (addPieceInfo.owner) {
+      gameEngine.resignedPiece({
+        pieceData: addPieceInfo.pieceData,
+        owner: user.changeOwner(addPieceInfo.owner),
+        at: addPieceInfo.at
+      });
+    } else {
+      gameEngine.removePiece({
+        at: addPieceInfo.at
+      });
+    }
+    
+
+    // 諸々の更新
+    if (gameEngine.didUpdateBoard()) setCurrentBoard(gameEngine.getBoard());
+
       sendGameEvent({
-        type: "addPiece",
+        type: "add",
         userCode: user.getUserCode(),
-        pieceData,
-        to
+        pieceData: addPieceInfo.pieceData,
+        to: addPieceInfo.at,
+        turn: addPieceInfo.owner
       }).then(reload);
+
   },[]);
 
-    return { currentBoard, myselfCapturedPiece, opponentCapturedPiece, movePiece, promotedPiece, resignedPiece, resetAll, undoPiece, currentTurn: currentTurnState };
+    return { currentBoard, myselfCapturedPiece, opponentCapturedPiece, movePiece, promotedPiece, resignedPiece, resetAll, undoPiece, currentTurn: currentTurnState, addPiece };
 }

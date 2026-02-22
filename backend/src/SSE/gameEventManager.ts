@@ -10,6 +10,7 @@ export class GameEventManager {
     ["resign"],
     ["resetAll"],
     ["undo"],
+    ["add"]
   ];
 
   private sequenceIndex: number | null = null;

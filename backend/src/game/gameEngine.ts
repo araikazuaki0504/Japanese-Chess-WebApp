@@ -1,6 +1,6 @@
 import { initialBoard, PieceInstance } from "../const/initialBoard";
 import { Blank, piecesData } from "../const/piecesData";
-import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType, resignedPieceInfoType, gameEventHistoryType, unMovePieceInfoType, unPromotedPieceInfoType, unCapturedPieceInfoType, unResignedPieceInfoType, ReturnGameEventType }  from "../types/gameType";
+import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType, resignedPieceInfoType, gameEventHistoryType, unMovePieceInfoType, unPromotedPieceInfoType, unCapturedPieceInfoType, unResignedPieceInfoType, addPieceInfoType }  from "../types/gameType";
 import { PiecesType, moveType, capturedPieces } from "../types/piecesInfoType";
 import { UserManager } from "./UserManager";
 
@@ -174,6 +174,16 @@ export class GameEngine {
         else this.goteCapturedPiecesList = capturedPiecesList.filter((capturedPiece : capturedPieces) => capturedPiece.pieceCount > 0);
     }
 
+    addPiece(addPieceInfo : addPieceInfoType) {
+      const [ toX, toY ] = addPieceInfo.at;
+
+      if (addPieceInfo.owner) {
+        this.board[toY][toX] = {def: addPieceInfo.pieceData, owner: addPieceInfo.owner};
+      } else {
+        this.board[toY][toX] = {def: Blank, owner: "None"};
+      }
+    }
+
     resetAll() : void {
         this.board = initialBoard.map(row => row.map(piece => ({...piece})));
         this.gameEventHistory = [];
@@ -186,6 +196,9 @@ export class GameEngine {
     validation(gameEvent : gameEventType) : boolean {
       if (gameEvent.type === "resetAll") return true;
       else if (gameEvent.type === "undo" && this.gameEventHistory.length > 0) return true;
+
+      if (this.userManager.getUserType(gameEvent.userCode) === "Spectator") return true;
+
       if (this.userManager.getUserType(gameEvent.userCode) !== this.currentTurn) return false;
 
       switch(gameEvent.type) {
@@ -325,6 +338,12 @@ export class GameEngine {
       } else if (reducer.type === "resetAll") {
         // 盤面と持ち駒リストを初期化
         this.resetAll();
+      } else if (reducer.type === "add" && reducer.pieceData !== undefined && reducer.to !== undefined) {
+        this.addPiece({
+          pieceData: reducer.pieceData,
+          owner: reducer.turn,
+          at: reducer.to
+        });
       } else {
         return;
       }
@@ -373,7 +392,7 @@ export class GameEngine {
           case "move":
             this.undoMovePiece({
               pieceData: PieceData!,
-              turn: lastEvent.turn,
+              turn: lastEvent.turn!,
               to: lastEvent.to!,
               from: lastEvent.from!
             });
@@ -391,7 +410,7 @@ export class GameEngine {
             if (lastEvent.to) { // 空イベントは無視
               this.undoPromotedPiece({
                 pieceData: PieceData!,
-                turn: lastEvent.turn,
+                turn: lastEvent.turn!,
                 at: lastEvent.to!
               });
             }
@@ -411,7 +430,7 @@ export class GameEngine {
           case "captured":
             this.undoCapturedPiece({
               pieceData: PieceData!,
-              turn: lastEvent.turn,
+              turn: lastEvent.turn!,
               at: lastEvent.from!
             });
 
@@ -427,7 +446,7 @@ export class GameEngine {
           case "resign":
             this.undoResignedPiece({
               pieceData: PieceData!,
-              turn: lastEvent.turn,
+              turn: lastEvent.turn!,
               at: lastEvent.to!
             });
 

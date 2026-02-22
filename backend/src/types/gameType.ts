@@ -22,9 +22,15 @@ export interface resignedPieceInfoType {
     at : [number, number];
 }
 
+export interface addPieceInfoType {
+    pieceData: PiecesType;
+    owner? : "Sente" | "Gote";
+    at : [number, number];
+}
+
 export interface gameEventHistoryType {
     type : gameEventType["type"];
-    turn : "Sente" | "Gote" ;
+    turn? : "Sente" | "Gote" ;
     pieceCode : number;
     to? : [number, number];
     from? : [number, number];

@@ -128,8 +128,8 @@ app.get("/sse", (req: express.Request, res: express.Response) => {
 app.post("/gameEvent", (req: express.Request, res: express.Response) => {
   const gameEvent : gameEventMessage = req.body;
 
-  const UserType = userManager.getUserType(gameEvent.userCode);
-  const convertedGameEvent = GameEngine.convertServerCoordinate(gameEvent,UserType as "Sente" | "Gote");
+  const userType = userManager.getUserType(gameEvent.userCode);
+  const convertedGameEvent = GameEngine.convertServerCoordinate(gameEvent,userType as "Sente" | "Gote");
 
   if (!gameEventManager.check(gameEvent.type)) {
     console.log("Invalid event sequence:", gameEvent.type);
@@ -143,7 +143,7 @@ app.post("/gameEvent", (req: express.Request, res: express.Response) => {
   const result = gameEngine.validation(convertedGameEvent);
 
   console.log("result:",result);
-  console.log("userType:",UserType);
+  console.log("userType:",userType);
   console.log("currentTurn",gameEngine.getcurrentTurn());
   console.log("gameEvent:");
   console.log(convertedGameEvent);
