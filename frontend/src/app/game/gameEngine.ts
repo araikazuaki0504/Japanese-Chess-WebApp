@@ -1,4 +1,4 @@
-import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType, capturedPieces, resignedPieceInfoType,unMovePieceInfoType, unPromotedPieceInfoType, unCapturedPieceInfoType, unResignedPieceInfoType, addPieceInfoType }  from "../types/gameType";
+import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType, capturedPieces, resignedPieceInfoType,unMovePieceInfoType, unPromotedPieceInfoType, unCapturedPieceInfoType, unResignedPieceInfoType, addPieceInfoType, removeInfoType }  from "../types/gameType";
 import { moveType, PiecesType } from "../types/piecesInfoType";
 
 import { initialBoard, PieceInstance, lightPieceInstance, lightCapturedPieceData } from "../const/initialBoard";
@@ -375,6 +375,40 @@ export class GameEngine {
         return [...undoCapturedPiecesList];
     }
 
+    addPiece(addPieceInfo: addPieceInfoType) : void {
+        this.board = this.addPiece_ApplyBoard(this.board as PieceInstance[][], addPieceInfo);
+    }
+
+    private addPiece_ApplyBoard(board :PieceInstance[][], addPieceInfo: addPieceInfoType) : PieceInstance[][] {
+        if (addPieceInfo.owner) {
+            const [toX, toY] = addPieceInfo.at;
+            const owner = this.user.changeOwner(addPieceInfo.owner);
+            const newBoard = this.updateBoard(board);
+
+            newBoard[toY][toX] = { def: addPieceInfo.pieceData, owner: owner };
+            return newBoard;
+        } else {
+            const [toX, toY] = addPieceInfo.at;
+            const newBoard = this.updateBoard(board);
+
+            newBoard[toY][toX] = { def: Blank, owner: "None" };
+            return newBoard;
+        }
+    }
+
+    removePiece (removeInfoType : removeInfoType) {
+        this.board = this.removePiece_Apply(this.board as PieceInstance[][], removeInfoType);
+    }
+
+    private removePiece_Apply(board : PieceInstance[][], removeInfoType : removeInfoType) : PieceInstance[][] {
+        const [toX, toY] = removeInfoType.at;
+
+        const newBoard = this.updateBoard(board);
+
+        newBoard[toY][toX] = { def : Blank, owner : "None" };
+        return newBoard;
+    }
+
     resetAll() : void {
         this.board = initialBoard.map(row => row.map(piece => ({...piece})));;
         this.myselfcapturedPiecesList = [];
@@ -385,23 +419,7 @@ export class GameEngine {
         this.didMyselfCapturedListUpdate = true;
         this.didOpponentCapturedListUpdate = true;
     }
-
-    addPiece(addPieceInfo: addPieceInfoType) : void {
-        this.board = this.addPiece_ApplyBoard(this.board as PieceInstance[][], addPieceInfo);
-    }
-
-    private addPiece_ApplyBoard(board :PieceInstance[][], addPieceInfo: addPieceInfoType) : PieceInstance[][] {
-        const [toX, toY] = addPieceInfo.to;
-        const owner = this.user.changeOwner(addPieceInfo.owner);
-
-        const newBoard = this.updateBoard(board);
-
-        newBoard[toY][toX] = { def: addPieceInfo.pieceData, owner: owner };
-
-        return newBoard;
-    }
         
-
     canMove(movePieceInfo: movePieceInfoType) : boolean {
         const [fromX, fromY] = movePieceInfo.from;
         const [toX, toY] = movePieceInfo.to;
@@ -538,15 +556,20 @@ export class GameEngine {
         }
 
         // 任意の駒を追加
-        if (reducer.type === "addPiece" && reducer.to !== undefined && reducer.pieceData !== undefined && reducer.turn !== undefined) {
+        if (reducer.type === "add" && reducer.to !== undefined && reducer.pieceData !== undefined) {
             const oldBoard = this.board;
 
-            this.addPiece({
-                pieceData : reducer.pieceData,
-                owner : reducer.turn,
-                to : this.coordinateRotate180(reducer.to)
-             });
-
+            if (reducer.turn) {
+                this.addPiece({
+                    pieceData : reducer.pieceData,
+                    owner : reducer.turn,
+                    at : this.coordinateRotate180(reducer.to)
+                });
+            } else {
+                this.removePiece({
+                    at: this.coordinateRotate180(reducer.to)
+                });
+            }
              if (this.board === oldBoard) this.didBoardUpdate = false;
         }
     }
@@ -616,6 +639,13 @@ export class GameEngine {
         const [x,y] = coordinate;
         
         if (this.user.getUserType() === "Sente") return [8 - x, 8 - y];
+        else return coordinate;
+    }
+
+    private coordinateRotate180WithUserType(coordinate : [number,number], userType : "Sente" | "Gote") : [number,number] {
+        const [x,y] = coordinate;
+        
+        if (userType === "Gote") return [8 - x, 8 - y];
         else return coordinate;
     }
 }

@@ -9,8 +9,8 @@ import { IsPromotedPopUp } from "./IsPromotedPopOut";
 
 import "./css/ShogiBoard.css";
 
-export default function ShogiBoard({ board, movePiece, resignedPieceData, promotedPiece, handleResignedPiece } : 
-{ board: ReadonlyArray<ReadonlyArray<PieceInstance>>, movePiece: (movePieceInfo: movePieceInfoType) => Promise<boolean>, resignedPieceData: React.MutableRefObject<PiecesType | null>, promotedPiece: (promotedPieceInfo: promotedPieceInfoType) => void, handleResignedPiece: (x : number, y : number) => void }) {
+export default function ShogiBoard({ board, movePiece, resignedPieceData, promotedPiece, handleResignedPiece, handleAddPiece_left, handleAddPiece_right } : 
+{ board: ReadonlyArray<ReadonlyArray<PieceInstance>>, movePiece: (movePieceInfo: movePieceInfoType) => Promise<boolean>, resignedPieceData: React.MutableRefObject<PiecesType | null>, promotedPiece: (promotedPieceInfo: promotedPieceInfoType) => void, handleResignedPiece: (x : number, y : number) => void, handleAddPiece_left: (x : number, y : number) => void, handleAddPiece_right: (x : number, y : number) => void }) {
   const [canPromoted, setCanPromoted] = useState<boolean>(false);
 
   const PromotedCandidate = useRef<promotedPieceInfoType | null>(null);
@@ -110,7 +110,7 @@ export default function ShogiBoard({ board, movePiece, resignedPieceData, promot
             const isSelected = selected && selected.x === x && selected.y === y;
 
             return (
-              <div key={`${x}-${y}`} className={`cell ${isSelected ? "selected" : ""}`} onClick={() => handleCellClick(x, y)}>
+              <div key={`${x}-${y}`} className={`cell ${isSelected ? "selected" : ""}`} onClick={() => {handleCellClick(x, y); handleAddPiece_left(x,y);}}  onContextMenu={(e) => {e.preventDefault(); handleAddPiece_right(x,y)}}>
                 {cell.def.name != Blank.name && (
                   <img
                     src={cell.def.imagePath}
