@@ -109,7 +109,7 @@ export function useShogiGame() {
   useEffect(() => {
     // 初期化
     initShogiService().then((initData) => {
-      const es = new EventSource("http://localhost:3000/sse", { withCredentials: true });
+      const es = new EventSource("http://133.242.148.242/:3000/sse", { withCredentials: true });
 
       setCurrentBoard(GameEngine.ligthBoardToBoard(initData.boardData));
       gameEngine.initSetBoard(initData.boardData);
