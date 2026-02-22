@@ -25,7 +25,7 @@ export function ShogiAPI() {
 
     const sendGameEvent = async (gameEventMessage : gameEventMessageType) : Promise<ReturnGameEventMessageType> => {
         try {
-            const res = await fetch("http://133.242.148.242/:3000/gameEvent", {
+            const res = await fetch("http://133.242.148.242:3000/gameEvent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
