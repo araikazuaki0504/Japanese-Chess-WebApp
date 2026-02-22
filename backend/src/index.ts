@@ -128,7 +128,7 @@ app.get("/sse", (req: express.Request, res: express.Response) => {
 app.post("/gameEvent", (req: express.Request, res: express.Response) => {
   const gameEvent : gameEventMessage = req.body;
 
-  const userType = userManager.getUserType(gameEvent.userCode);
+  const userType = userManager.changeOwner(gameEvent.userCode);
   const convertedGameEvent = GameEngine.convertServerCoordinate(gameEvent,userType as "Sente" | "Gote");
 
   if (!gameEventManager.check(gameEvent.type)) {
