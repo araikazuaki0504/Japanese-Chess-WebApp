@@ -23,6 +23,18 @@ export class UserManager {
         }
     }
 
+    changeOwner(userIDKey : number) : "Sente" | "Gote" | undefined {
+        var senteGote : "Sente" | "Gote" | "Spectator" = "Spectator";
+        for (const [userType, ID] of this.userList) {
+            if (userIDKey === ID) {
+                senteGote = userType;
+            }
+        }
+
+        if (senteGote === "Spectator")senteGote = "Gote";
+        return senteGote;
+    }
+
     addUser(userType : "Sente" | "Gote" | "Spectator", userID : number, ) {
         this.userList.set(userType,userID);
     }
