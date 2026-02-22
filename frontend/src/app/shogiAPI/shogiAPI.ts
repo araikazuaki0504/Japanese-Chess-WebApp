@@ -3,7 +3,7 @@ import { gameEventMessageType, ReturnGameEventMessageType , InitMessageType, Ret
 export function ShogiAPI() {
     const sendInitEvent = async (initMessageType : InitMessageType) : Promise<RetutrnInitMessageType> => {
         try {
-            const res = await fetch("http://localhost:3000/init", {
+            const res = await fetch("http://133.242.148.242:3000/init", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
@@ -25,7 +25,7 @@ export function ShogiAPI() {
 
     const sendGameEvent = async (gameEventMessage : gameEventMessageType) : Promise<ReturnGameEventMessageType> => {
         try {
-            const res = await fetch("http://localhost:3000/gameEvent", {
+            const res = await fetch("http://133.242.148.242/:3000/gameEvent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -45,7 +45,7 @@ export function ShogiAPI() {
 
     const sendReloadEvent = async () : Promise<ReturnReloadMessageType> => {
         try {
-            const res = await fetch("http://localhost:3000/reload", {
+            const res = await fetch("http://133.242.148.242:3000/reload", {
             method: "GET",
             headers: { "Content-Type": "application/json" },
             credentials: "include"
