@@ -163,7 +163,6 @@ export function useShogiGame() {
           userCode : user.getUserCode(),
           pieceData : capturedPieceData,
           from : movePieceInfo.to,
-          turn: user.getUserType() === "Spectator" ? "Gote" : undefined
         }).then(reload);
       }
 
@@ -175,7 +174,6 @@ export function useShogiGame() {
         type:"move",
         userCode: user.getUserCode(),
         ...movePieceInfo,
-        turn: user.getUserType() === "Spectator" ? "Gote" : undefined
       }).then(reload);
       
       // Boardを更新するか
@@ -196,7 +194,6 @@ export function useShogiGame() {
         userCode: user.getUserCode(),
         pieceData : Blank,
         isPromoted : false,
-        turn: user.getUserType() === "Spectator" ? "Gote" : undefined
       }).then(reloadWithTurnChange);
       return;
     };
