@@ -1,7 +1,7 @@
 import { PiecesType } from "./piecesInfoType";
 
 export interface gameEventType {
-    type: "move" | "promoted" | "captured" | "resign" | "resetAll" | "undo" | "add" | "error";
+    type: "move" | "promoted" | "captured" | "resign" | "error";
     userCode: number;
     pieceData?: PiecesType;
     to? : [number, number];

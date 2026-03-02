@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 
-import { gameEventMessage, ReturnGameEventMessage } from "./types/APIType";
+import { gameEventMessageType, ReturnGameEventMessageType, editEventMessageType, ReturnEditEventMessageType } from "./types/APIType";
 import { InitMessageType, ReturnInitMessageType, ReturnReloadMessageType } from "./types/APIType";
 
 import { GameEngine } from "./game/gameEngine";
@@ -9,7 +9,6 @@ import { SSEManager } from "./SSE/SSEManager";
 import { UserManager } from "./game/UserManager";
 import { GameEventManager } from "./SSE/gameEventManager";
 import { mapBoardToClient, toLightCapturedPiecesList } from "./game/gameLogic"
-import { gameEventType } from "./types/gameType";
 
 const app = express();
 const gameEngine = new GameEngine();
@@ -27,7 +26,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // 初期情報の取得
-app.post("/init", (req: express.Request<InitMessageType>, res: express.Response<ReturnInitMessageType>) => {
+app.post("/api/init", (req: express.Request<InitMessageType>, res: express.Response<ReturnInitMessageType>) => {
   res.setHeader("Content-Type", "application/json");
 
   let userID = req.cookies.userID;
@@ -74,7 +73,7 @@ app.post("/init", (req: express.Request<InitMessageType>, res: express.Response<
 });
 
 // リロード(再読み込み)
-app.get("/reload", (req: express.Request, res: express.Response) => {
+app.get("/api/reload", (req: express.Request, res: express.Response) => {
   res.setHeader("Content-Type", "application/json");
 
   const userID = req.cookies.userID;
@@ -98,7 +97,7 @@ app.get("/reload", (req: express.Request, res: express.Response) => {
 });
 
 /** SSE */
-app.get("/sse", (req: express.Request, res: express.Response) => {
+app.get("/api/sse", (req: express.Request, res: express.Response) => {
   const userID = req.cookies.userID;
   console.log("Client Auth connect", userID);
 
@@ -125,11 +124,10 @@ app.get("/sse", (req: express.Request, res: express.Response) => {
   
 });
 
-app.post("/gameEvent", (req: express.Request, res: express.Response) => {
-  const gameEvent : gameEventMessage = req.body;
+app.post("/api/gameEvent", (req: express.Request, res: express.Response) => {
+  const gameEvent : gameEventMessageType = req.body;
 
-  const userType = userManager.changeOwner(gameEvent.userCode);
-  const convertedGameEvent = GameEngine.convertServerCoordinate(gameEvent,userType as "Sente" | "Gote");
+  const convertedGameEvent = GameEngine.convertServerCoordinate(gameEvent, gameEvent.owner);
 
   if (!gameEventManager.check(gameEvent.type)) {
     console.log("Invalid event sequence:", gameEvent.type);
@@ -143,34 +141,57 @@ app.post("/gameEvent", (req: express.Request, res: express.Response) => {
   const result = gameEngine.validation(convertedGameEvent);
 
   console.log("result:",result);
-  console.log("userType:",userType);
+  console.log("userType:",gameEvent.owner);
   console.log("currentTurn",gameEngine.getcurrentTurn());
   console.log("gameEvent:");
   console.log(convertedGameEvent);
 
-  if (result && convertedGameEvent.type !== "undo") { 
-    gameEngine.ApplyReducer(convertedGameEvent);
-    sseManager.notifyOthers(convertedGameEvent.userCode,convertedGameEvent);
+  gameEngine.ApplyReducer(convertedGameEvent);
+  sseManager.notifyOthers(convertedGameEvent.userCode,{
+    eventType: "operateEvent",
+    event: convertedGameEvent
+  });
 
-    const returnGameEventMessage : ReturnGameEventMessage = {
-      ...convertedGameEvent,
-      currentTurn : gameEngine.getcurrentTurn(),
-      result : result
-    }
-
-    return res.json(returnGameEventMessage);
-  }else if (result && convertedGameEvent.type === "undo") {
-    const gameEventMessages : gameEventType[] = gameEngine.undoApplyReducer();
-
-    for (const gameEventMessage of gameEventMessages) {
-      sseManager.notifyAll(gameEventMessage);
-    }
-
-    return res.json({});
+  const returnGameEventMessage : ReturnGameEventMessageType = {
+    ...convertedGameEvent,
+    currentTurn : gameEngine.getcurrentTurn(),
+    result : result
   }
+
+  return res.json(returnGameEventMessage);
   
 });
 
-app.listen(3000, "0.0.0.0", () => {
+app.post("/api/editEvent", (req: express.Request, res: express.Response) => {
+    const editEvent : editEventMessageType = req.body;
+
+    console.log("userType:",editEvent.owner);
+    console.log("currentTurn",gameEngine.getcurrentTurn());
+    console.log("editEvent:");
+    console.log(editEvent);
+
+    if (editEvent.type === "undo") {
+      const oneTurnHistoryReducer = gameEngine.undoApplyReducer();
+      sseManager.notifyAll({
+        eventType: "editEvent",
+        event: oneTurnHistoryReducer
+      });
+    } else {
+      gameEngine.ApplyEditReducer(editEvent);
+      sseManager.notifyAll({
+        eventType: "editEvent",
+        event: [editEvent]
+      });
+    }
+    
+    const returnEditEventMessage : ReturnEditEventMessageType = {
+      ...editEvent,
+      result : true
+    }
+
+    return res.json(returnEditEventMessage);
+})
+
+app.listen(3000, /*"0.0.0.0",*/ () => {
   console.log("Shogi server listening on :3000");
 });

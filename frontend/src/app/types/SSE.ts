@@ -1,3 +1,6 @@
-import { ReturnGameEventMessageType } from "./APIType";
+import { gameEventMessageType, editEventMessageType } from "./APIType";
 
-export type SSEMessageType = ReturnGameEventMessageType;
+export interface SSEMessageType {
+    eventType: "operateEvent" | "editEvent";
+    event: gameEventMessageType | editEventMessageType[];
+}

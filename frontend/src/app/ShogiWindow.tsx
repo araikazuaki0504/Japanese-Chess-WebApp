@@ -19,7 +19,7 @@ export default function ShogiWindow() {
   const user = User.getInstance();
   const resignedPieceData = useRef<PiecesType | null>(null);
   const addPieceData = useRef<PiecesType | null>(null);
-  const pieceState = useRef<"Sente" | "Gote" | undefined>("Gote");
+  const targetOwner = useRef<"Sente" | "Gote">("Gote");
   const clickHistory = useRef<[Number,Number]>([9,9]);
  
   const handleResignedPiece = (x : number, y : number) => {
@@ -38,21 +38,27 @@ export default function ShogiWindow() {
     if (!addPieceData.current) return;
     if (addPieceData == null) return;
 
+    if (!(clickHistory.current[0] === x && clickHistory.current[1] === y)) {
+      targetOwner.current = "Gote";
+    }
+
+    clickHistory.current = [x,y];
+
     editPiece({
-      pieceData: addPieceData.current,
-      owner: undefined,
-      at: [x,y]
+      type: "add",
+      info: {
+        pieceData: addPieceData.current,
+        owner: targetOwner.current,
+        at: [x,y]
+      }
     });
 
-    switch (pieceState.current) {
+    switch (targetOwner.current) {
       case "Sente" : 
-        pieceState.current = "Gote";
+        targetOwner.current = "Gote";
         break;
       case "Gote" :
-        pieceState.current = undefined;
-        break;
-      case undefined :
-        pieceState.current = "Sente";
+        targetOwner.current = "Sente";
         break;
     }
   }
@@ -60,29 +66,13 @@ export default function ShogiWindow() {
   const handleAddPiece_right = (x : number, y : number) => {
     if (!addPieceData.current) return;
 
-    if (!(clickHistory.current[0] === x && clickHistory.current[1] === y)) {
-      pieceState.current = "Gote";
-    }
-
-    clickHistory.current = [x,y];
-
     editPiece({
-      pieceData: addPieceData.current,
-      owner: pieceState.current,
-      at: [x,y]
+      type: "remove",
+      info: {
+        pieceData: addPieceData.current,
+        at: [x,y]
+      }
     });
-
-    switch (pieceState.current) {
-      case "Sente" : 
-        pieceState.current = undefined;
-        break;
-      case "Gote" :
-        pieceState.current = "Sente";
-        break;
-      case undefined :
-        pieceState.current = "Gote";
-        break;
-    }
   }
 
   return (

@@ -7,7 +7,7 @@ import { useUtilitiesShogiGame } from "./useUtilitiesShogiGame";
 import { GameEngine } from "../game/gameEngine";
 import { User } from "../user/user";
 
-import { addPieceInfoType } from "../types/editType";
+import { addPieceInfoType, editPieceInfoType, removePieceInfoType } from "../types/editType";
 import { PieceInstance } from "../const/initialBoard";
 import { capturedPieces } from "../types/gameType";
 
@@ -50,30 +50,40 @@ export function useEditShogiGame(setCurrentBoard : (currentBoard : ReadonlyArray
         });
     },[]);
 
-    const editPiece = useCallback((addPieceInfo : addPieceInfoType) => {
+    const editPiece = useCallback((editPieceInfo : editPieceInfoType) => {
         if (user.getUserType() !== "Spectator") return;
 
-        if (addPieceInfo.owner) {
-        gameEngine.resignedPiece({
-            pieceData: addPieceInfo.pieceData,
-            owner: user.changeOwner(addPieceInfo.owner),
-            at: addPieceInfo.at
-        });
+        if (editPieceInfo.type === "add") {
+            gameEngine.addPiece({
+                ...editPieceInfo.info
+            });
         } else {
-        gameEngine.removePiece({
-            at: addPieceInfo.at
-        });
+            gameEngine.removePiece({
+                ...editPieceInfo.info
+            });
         }
         
         // 諸々の更新
         if (gameEngine.didUpdateBoard()) setCurrentBoard(gameEngine.getBoard());
 
-        sendEditEvent({
-        type: "add",
-        userCode: user.getUserCode(),
-        pieceData: addPieceInfo.pieceData,
-        to: addPieceInfo.at
-        }).then(reload);
+        if (editPieceInfo.type === "add") {
+            const addPieceInfo = editPieceInfo.info as addPieceInfoType;
+            sendEditEvent({
+                type: "edit-add",
+                userCode: user.getUserCode(),
+                owner: addPieceInfo.owner,
+                pieceData: addPieceInfo.pieceData,
+                to: editPieceInfo.info.at
+            }).then(reload);
+        } else if (editPieceInfo.type === "remove") {
+            const removePieceInfo = editPieceInfo.info as removePieceInfoType;
+            sendEditEvent({
+                type: "edit-remove",
+                userCode: user.getUserCode(),
+                pieceData: removePieceInfo.pieceData,
+                from: removePieceInfo.at
+            }).then(reload);
+        }
 
     },[]);
 

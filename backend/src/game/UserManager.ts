@@ -1,6 +1,6 @@
 export class UserManager {
     private static instance : UserManager;
-    private userList : Map<"Sente" | "Gote" | "Spectator",number> = new Map<"Sente" | "Gote" | "Spectator",number>();
+    private userList : Map<number, "Sente" | "Gote" | "Spectator"> = new Map<number,"Sente" | "Gote" | "Spectator">();
 
     private constructor(){}
 
@@ -11,43 +11,57 @@ export class UserManager {
         return UserManager.instance;
     }
 
+    isExistUser(userIDKey : number) : boolean {
+        return this.userList.has(userIDKey);
+    }
+
+    isSpectator(userIDKey : number) : boolean{
+        if (!this.isExistUser(userIDKey)) return false;
+
+        const userType = this.getUserType(userIDKey);
+
+        if (userType === "Spectator") return true;
+        else return false;
+    }
+
     getUserID(userTypeKey : "Sente" | "Gote" | "Spectator") : number | undefined{
-        return this.userList.get(userTypeKey);
+        for (const [ID, userType] of this.userList) {
+            if (userType === userTypeKey) {
+                return ID;
+            }
+        }
     }
 
     getUserType(userIDKey : number) : "Sente" | "Gote" | "Spectator" | undefined{
-        for (const [userType, ID] of this.userList) {
-            if (userIDKey === ID) {
-                return userType;
-            }
-        }
+        return this.userList.get(userIDKey);
+    }
+
+    getTeban(userIDKey : number) : "Sente" | "Gote" {
+        const userType = this.getUserType(userIDKey);
+
+        if (userType === "Gote" || userType === "Spectator") return "Gote";
+        else return "Sente";
     }
 
     changeOwner(userIDKey : number) : "Sente" | "Gote" | undefined {
-        var senteGote : "Sente" | "Gote" | "Spectator" = "Spectator";
-        for (const [userType, ID] of this.userList) {
-            if (userIDKey === ID) {
-                senteGote = userType;
-            }
-        }
-
-        if (senteGote === "Spectator")senteGote = "Gote";
-        return senteGote;
+        if (this.isExistUser(userIDKey)) return undefined
+        
+        return this.getTeban(userIDKey);
     }
 
     addUser(userType : "Sente" | "Gote" | "Spectator", userID : number, ) {
-        this.userList.set(userType,userID);
+        this.userList.set(userID,userType);
     }
 
-    removeUserWithUserType(userType : "Sente" | "Gote" | "Spectator") {
-        this.userList.delete(userType);
+    removeUserWithUserType(targetUserType : "Sente" | "Gote" | "Spectator") {
+        for (const [ID,userType] of this.userList) {
+            if (userType === targetUserType) {
+                this.userList.delete(ID);
+            }
+        }
     }
 
     removeUserWithUserID(userID : number) {
-        for (const [userType, ID] of this.userList) {
-            if (userID === ID) {
-                this.userList.delete(userType);
-            }
-        }
+        this.userList.delete(userID);
     }
 }

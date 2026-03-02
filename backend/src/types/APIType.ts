@@ -24,17 +24,31 @@ export interface ReturnReloadMessageType{
     opponentCapturedList : lightCapturedPieceData[];
 };
 
-export interface gameEventMessage {
-    type : "move" | "promoted" | "captured" | "resign" | "resetAll" | "undo" | "add" | "error";
+export interface gameEventMessageType {
+    type : "move" | "promoted" | "captured" | "resign" | "error";
     userCode : number;
     pieceData? : PiecesType;
     to? : [number, number];
     from? : [number, number];
     isPromoted? : boolean;
-    turn? : "Sente" | "Gote";
+    owner : "Sente" | "Gote";
 }
 
-export interface ReturnGameEventMessage extends gameEventMessage {
+export interface ReturnGameEventMessageType extends gameEventMessageType {
     currentTurn : "Sente" | "Gote" | "Spectator";
+    result: boolean;
+}
+
+export interface editEventMessageType {
+    type: "resetAll" | "undo" | "edit-add" | "edit-remove" | "error";
+    userCode: number;
+    pieceData?: PiecesType;
+    to? : [number, number];
+    from? : [number, number];
+    isPromoted? : boolean;
+    owner? : "Sente" | "Gote";
+}
+
+export interface ReturnEditEventMessageType extends editEventMessageType {
     result: boolean;
 }

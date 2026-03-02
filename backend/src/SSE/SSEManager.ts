@@ -1,6 +1,6 @@
 import express from "express";
 
-import { SSEMessage } from "../types/SSEType";
+import { SSEMessageType } from "../types/SSEType";
 
 export interface client {
   userID : number;
@@ -55,7 +55,7 @@ export class SSEManager {
     });
   }
 
-  notifyAll (data : SSEMessage) : boolean {
+  notifyAll (data : SSEMessageType) : boolean {
     if (this.clients.size === 0) return false;
 
     this.clients.forEach((client : express.Response) => {
@@ -65,7 +65,7 @@ export class SSEManager {
     return true;
   }
 
-  notifyOne (userID : number, data : SSEMessage) : boolean {
+  notifyOne (userID : number, data : SSEMessageType) : boolean {
     const client = this.clients.get(userID);
     if (!client) return false;
 
@@ -73,7 +73,7 @@ export class SSEManager {
     return true;
   }
 
-  notifyOthers (targetuserID : number, data : SSEMessage) : boolean {
+  notifyOthers (targetuserID : number, data : SSEMessageType) : boolean {
     if (this.clients.size === 0) return false;
 
     this.clients.forEach((res : express.Response, userID : number) => {

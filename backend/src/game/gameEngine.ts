@@ -1,6 +1,7 @@
 import { initialBoard, PieceInstance } from "../const/initialBoard";
 import { Blank, piecesData } from "../const/piecesData";
-import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType, resignedPieceInfoType, gameEventHistoryType, unMovePieceInfoType, unPromotedPieceInfoType, unCapturedPieceInfoType, unResignedPieceInfoType, addPieceInfoType }  from "../types/gameType";
+import { gameEventType, movePieceInfoType, promotedPieceInfoType, capturedPieceInfoType, resignedPieceInfoType, gameEventHistoryType, addPieceInfoType, editEventType }  from "../types/gameType";
+import { unMovePieceInfoType, unPromotedPieceInfoType, unCapturedPieceInfoType, unResignedPieceInfoType } from "../types/editType";
 import { PiecesType, moveType, capturedPieces } from "../types/piecesInfoType";
 import { UserManager } from "./UserManager";
 
@@ -43,13 +44,13 @@ export class GameEngine {
         this.undoMovePiece_ApplyBoard(undoMovePieceInfo);
     }
 
-    undoMovePiece_ApplyBoard(undoMovePieceInfo: unMovePieceInfoType) : void {
+    private undoMovePiece_ApplyBoard(undoMovePieceInfo: unMovePieceInfoType) : void {
         const [fromX, fromY] = undoMovePieceInfo.from;
         const [toX, toY] = undoMovePieceInfo.to;
         const movePieceData = undoMovePieceInfo.pieceData;
         
         // 移動
-        this.board[fromY][fromX] = { def: movePieceData, owner: this.currentTurn };
+        this.board[fromY][fromX] = { def: movePieceData, owner: undoMovePieceInfo.turn };
         this.board[toY][toX] = { def: Blank, owner: "None" };
     }
 
@@ -57,20 +58,28 @@ export class GameEngine {
         this.undoPromotedPiece_ApplyBoard(undoPromotedPieceInfo);
     }
 
-    undoPromotedPiece_ApplyBoard(undoPromotedPieceInfo : unPromotedPieceInfoType) : void {
+    private undoPromotedPiece_ApplyBoard(undoPromotedPieceInfo : unPromotedPieceInfoType) : void {
         const [x, y] = undoPromotedPieceInfo.at;
         const unPromotedPieceData = undoPromotedPieceInfo.pieceData;
 
-        this.board[y][x] = { def: unPromotedPieceData, owner: this.currentTurn};
+        this.board[y][x] = { def: unPromotedPieceData, owner: undoPromotedPieceInfo.turn};
     }
 
     undoCapturedPiece(undoCapturedPieceInfo : unCapturedPieceInfoType) : void {
         this.undoCapturedPiece_ApplyList(undoCapturedPieceInfo);
+        this.undoCapturedPiece_ApplyBoard(undoCapturedPieceInfo);
     }
 
-    undoCapturedPiece_ApplyList(undoCapturedPieceInfo : unCapturedPieceInfoType) : void {
+    private undoCapturedPiece_ApplyBoard(undoCapturedPieceInfo : unCapturedPieceInfoType) : void {
+        const [x, y] = undoCapturedPieceInfo.at;
+        const unPromotedPieceData = undoCapturedPieceInfo.pieceData;
+
+        this.board[y][x] = { def: unPromotedPieceData, owner: (undoCapturedPieceInfo.turn === "Sente" ? "Gote" : "Sente")};
+    }
+
+    private undoCapturedPiece_ApplyList(undoCapturedPieceInfo : unCapturedPieceInfoType) : void {
         const capturedPieceData = undoCapturedPieceInfo.pieceData;
-        const capturedPiecesList = this.currentTurn === "Sente" ? this.senteCapturedPiecesList : this.goteCapturedPiecesList;
+        const capturedPiecesList = undoCapturedPieceInfo.turn === "Sente" ? this.senteCapturedPiecesList : this.goteCapturedPiecesList;
 
         const capturedPieceIndex = capturedPiecesList.findIndex(
             capturedPieces => capturedPieces.pieceData.piecesCode === capturedPieceData.piecesCode
@@ -80,7 +89,7 @@ export class GameEngine {
         if (capturedPieceIndex === -1) return;
         else capturedPiecesList[capturedPieceIndex].pieceCount -= 1;
 
-        if (this.currentTurn === "Sente") this.senteCapturedPiecesList = capturedPiecesList.filter((capturedPiece : capturedPieces) => capturedPiece.pieceCount > 0);
+        if (undoCapturedPieceInfo.turn === "Sente") this.senteCapturedPiecesList = capturedPiecesList.filter((capturedPiece : capturedPieces) => capturedPiece.pieceCount > 0);
         else this.goteCapturedPiecesList = capturedPiecesList.filter((capturedPiece : capturedPieces) => capturedPiece.pieceCount > 0);
     }
 
@@ -93,12 +102,12 @@ export class GameEngine {
         const [x, y] = undoResignedPieceInfo.at;
         const resignedPieceData = undoResignedPieceInfo.pieceData;
 
-        this.board[y][x] = { def: resignedPieceData, owner: this.currentTurn};  
+        this.board[y][x] = { def: resignedPieceData, owner: undoResignedPieceInfo.turn};  
     }
 
     private undoResignedPiece_ApplyList(undoResignedPieceInfo: unResignedPieceInfoType) : void {
         const capturedPieceData = undoResignedPieceInfo.pieceData;
-        const capturedPiecesList = this.currentTurn === "Sente" ? this.senteCapturedPiecesList : this.goteCapturedPiecesList;
+        const capturedPiecesList = undoResignedPieceInfo.turn === "Sente" ? this.senteCapturedPiecesList : this.goteCapturedPiecesList;
 
         const capturedPieceIndex = capturedPiecesList.findIndex(
             capturedPiecesList => capturedPiecesList.pieceData.piecesCode === capturedPieceData.piecesCode
@@ -117,7 +126,7 @@ export class GameEngine {
         const movePieceData = movePieceInfo.pieceData;
         
         // 移動
-        this.board[toY][toX] = { def: movePieceData, owner: this.currentTurn };
+        this.board[toY][toX] = { def: movePieceData, owner: movePieceInfo.owner };
         this.board[fromY][fromX] = { def: Blank, owner: "None" };
     }
 
@@ -128,12 +137,12 @@ export class GameEngine {
         const promotedPieceCode = promotedPieceData.toPromotedPieceCode!;
         const promotedPieceDef = piecesData[promotedPieceCode];
         
-        this.board[y][x] = { def: promotedPieceDef!, owner: this.currentTurn};
+        this.board[y][x] = { def: promotedPieceDef!, owner: promotedPieceInfo.owner};
     }
 
     capturedPiece_ApplyList(capturedPieceInfo : capturedPieceInfoType) {
         const capturedPieceData = capturedPieceInfo.pieceData;
-        const capturedPiecesList = this.currentTurn === "Sente" ? this.senteCapturedPiecesList : this.goteCapturedPiecesList;
+        const capturedPiecesList = capturedPieceInfo.owner === "Sente" ? this.senteCapturedPiecesList : this.goteCapturedPiecesList;
 
         const capturedPieceIndex = capturedPiecesList.findIndex(
             capturedPieces => capturedPieces.pieceData.piecesCode === capturedPieceData.piecesCode
@@ -153,12 +162,12 @@ export class GameEngine {
         const [x, y] = resignedPieceInfo.at;
         const promotedPieceData = resignedPieceInfo.pieceData;
 
-        this.board[y][x] = { def: promotedPieceData, owner: this.currentTurn};  
+        this.board[y][x] = { def: promotedPieceData, owner: resignedPieceInfo.owner};  
     }
 
     private resignedPiece_ApplyList(resignedPieceInfo: resignedPieceInfoType) {
         const capturedPieceData = resignedPieceInfo.pieceData;
-        const capturedPiecesList = this.currentTurn === "Sente" ? this.senteCapturedPiecesList : this.goteCapturedPiecesList;
+        const capturedPiecesList = resignedPieceInfo.owner === "Sente" ? this.senteCapturedPiecesList : this.goteCapturedPiecesList;
 
         const capturedPieceIndex = capturedPiecesList.findIndex(
             capturedPiecesList => capturedPiecesList.pieceData.piecesCode === capturedPieceData.piecesCode
@@ -170,7 +179,7 @@ export class GameEngine {
         // 存在する場合
         capturedPiecesList[capturedPieceIndex].pieceCount -= 1;
         
-        if (this.currentTurn === "Sente") this.senteCapturedPiecesList = capturedPiecesList.filter((capturedPiece : capturedPieces) => capturedPiece.pieceCount > 0);
+        if (resignedPieceInfo.owner === "Sente") this.senteCapturedPiecesList = capturedPiecesList.filter((capturedPiece : capturedPieces) => capturedPiece.pieceCount > 0);
         else this.goteCapturedPiecesList = capturedPiecesList.filter((capturedPiece : capturedPieces) => capturedPiece.pieceCount > 0);
     }
 
@@ -194,9 +203,6 @@ export class GameEngine {
     }
 
     validation(gameEvent : gameEventType) : boolean {
-      if (gameEvent.type === "resetAll") return true;
-      else if (gameEvent.type === "undo" && this.gameEventHistory.length > 0) return true;
-
       if (this.userManager.getUserType(gameEvent.userCode) === "Spectator") return true;
 
       if (this.userManager.getUserType(gameEvent.userCode) !== this.currentTurn) return false;
@@ -206,6 +212,7 @@ export class GameEngine {
           if (!(gameEvent.to && gameEvent.from && gameEvent.pieceData))return false;
           return this.canMove({
             pieceData: gameEvent.pieceData,
+            owner: gameEvent.owner,
             to: gameEvent.to,
             from: gameEvent.from
           });
@@ -214,18 +221,21 @@ export class GameEngine {
           if (!(gameEvent.to && gameEvent.pieceData)) return false;
           return this.canPromoted({
             pieceData: gameEvent.pieceData,
+            owner: gameEvent.owner,
             at: gameEvent.to
           });
         case "captured":
           if (!(gameEvent.from && gameEvent.pieceData)) return false;
           return this.canCapturedPiece({
             pieceData: gameEvent.pieceData,
+            owner: gameEvent.owner,
             at: gameEvent.from
           });
         case "resign":
           if (!(gameEvent.to && gameEvent.pieceData)) return false;
           return this.canResignedPiece({
             pieceData: gameEvent.pieceData,
+            owner: gameEvent.owner,
             at: gameEvent.to
           });
         default:
@@ -237,7 +247,7 @@ export class GameEngine {
         const [fromX, fromY] = movePieceInfo.from;
         const [toX, toY] = movePieceInfo.to;
         const movePieceData = movePieceInfo.pieceData;
-        const Direction = this.currentTurn === "Sente" ? -1 : 1;
+        const Direction = movePieceInfo.owner === "Sente" ? -1 : 1;
             
         // 移動可能判定
         const canMove = movePieceData.move.some((move: moveType) => {
@@ -246,7 +256,7 @@ export class GameEngine {
                 const targetY = fromY + dy * Direction;
 
                 if (targetX < 0 || targetX >= GameEngine.BOARD_SIZE || targetY < 0 || targetY >= GameEngine.BOARD_SIZE) return false; // ボード外
-                if (this.board[targetY][targetX].owner === this.currentTurn) return false; // 自分の駒がある場合は移動できない
+                if (this.board[targetY][targetX].owner === movePieceInfo.owner) return false; // 自分の駒がある場合は移動できない
         
                 return targetX === toX && targetY === toY
             });
@@ -257,9 +267,9 @@ export class GameEngine {
                   const targetY = fromY + dy * i * Direction;
         
                   if (targetX < 0 || targetX >= GameEngine.BOARD_SIZE || targetY < 0 || targetY >= GameEngine.BOARD_SIZE) break; // ボード外
-                  if (this.board[targetY][targetX].owner === this.currentTurn) break; // 自分の駒がある場合は進めない
+                  if (this.board[targetY][targetX].owner === movePieceInfo.owner) break; // 自分の駒がある場合は進めない
                   // 相手の駒がある場合はそこまで進めるがそれ以上は進めない
-                  if (this.board[targetY][targetX].owner === this.otherTurn) {
+                  if (this.board[targetY][targetX].owner === (movePieceInfo.owner === "Sente" ? "Gote" : "Sente")) {
                     if (targetX === toX && targetY === toY) return true;
                     break;
                   } 
@@ -279,7 +289,7 @@ export class GameEngine {
 
         if (!this.checkPieceData(clientPromotedPieceData, ServerPromotedPieceData)) return false;
 
-        if (this.currentTurn === "Gote")return toY <= 2 && ServerPromotedPieceData.toPromotedPieceCode !== undefined;
+        if (promotedPieceInfo.owner === "Gote")return toY <= 2 && ServerPromotedPieceData.toPromotedPieceCode !== undefined;
         else return toY >= 6 && ServerPromotedPieceData.toPromotedPieceCode !== undefined;
     }
 
@@ -288,7 +298,7 @@ export class GameEngine {
 
         // if (!this.checkPieceData(capturedPieceInfo.pieceData, this.board[toY][toX].def)) return false;
 
-        return this.board[toY][toX].owner === this.otherTurn;
+        return this.board[toY][toX].owner === (capturedPieceInfo.owner === "Sente" ? "Sente" : "Gote");
     }
 
     canResignedPiece(resignedPieceInfo: resignedPieceInfoType) : boolean {
@@ -306,6 +316,7 @@ export class GameEngine {
         // 新しい盤面へ
         this.movePiece_ApplyBoard({
             pieceData : reducer.pieceData,
+            owner: reducer.owner,
             to : reducer.to,
             from : reducer.from
         });
@@ -313,6 +324,7 @@ export class GameEngine {
         // 新しい盤面へ
         this.promotedPiece_ApplyBoard({
             pieceData : reducer.pieceData,
+            owner: reducer.owner,
             at : reducer.to,
         });
         this.turnChange();
@@ -323,24 +335,17 @@ export class GameEngine {
         // 新しい相手の持ち駒リストへ
         this.capturedPiece_ApplyList({
             pieceData : reducer.pieceData,
+            owner: reducer.owner,
             at : reducer.from
         });
       } else if (reducer.type === "resign" && reducer.to !== undefined && reducer.pieceData) {// 駒を置く
 
         this.resignedPiece({
             pieceData : reducer.pieceData,
+            owner: reducer.owner,
             at : reducer.to
         });
         this.turnChange();
-      } else if (reducer.type === "resetAll") {
-        // 盤面と持ち駒リストを初期化
-        this.resetAll();
-      } else if (reducer.type === "add" && reducer.pieceData !== undefined && reducer.to !== undefined) {
-        this.addPiece({
-          pieceData: reducer.pieceData,
-          owner: reducer.turn,
-          at: reducer.to
-        });
       } else {
         return;
       }
@@ -348,14 +353,27 @@ export class GameEngine {
       // 履歴に追加
       this.gameEventHistory.push({
         type: reducer.type,
-        turn: this.currentTurn,
+        turn: reducer.owner,
         pieceCode: reducer.pieceData?.piecesCode!,
         to: reducer.to,
         from: reducer.from
       });
     }
 
-    undoApplyReducer() : gameEventType[] {
+    ApplyEditReducer(reducer: editEventType) : void {
+      if (reducer.type === "resetAll") {
+        // 盤面と持ち駒リストを初期化
+        this.resetAll();
+      } else if (reducer.type === "edit-add" && reducer.pieceData !== undefined && reducer.to !== undefined) {
+        this.addPiece({
+          pieceData: reducer.pieceData,
+          owner: reducer.owner,
+          at: reducer.to
+        });
+      }
+    }
+
+    undoApplyReducer() : editEventType[] {
       if (this.gameEventHistory.length === 0) {
         return [];
        }
@@ -381,7 +399,7 @@ export class GameEngine {
 
       console.log("one turn game event history", oneTurnGameHistory);
 
-      const undoEvent : gameEventType[] = [];
+      const undoEvent : editEventType[] = [];
 
       oneTurnGameHistory.forEach((lastEvent : gameEventHistoryType) => {
         const PieceData = piecesData[lastEvent.pieceCode];
@@ -400,7 +418,7 @@ export class GameEngine {
               pieceData: PieceData,
               to: lastEvent.to,
               from: lastEvent.from, 
-              turn: lastEvent.turn
+              owner: lastEvent.turn
             });
             break;
           case "promoted":
@@ -418,7 +436,7 @@ export class GameEngine {
               pieceData: PieceData,
               to: lastEvent.to,
               from: undefined,
-              turn: lastEvent.turn,
+              owner: lastEvent.turn,
               isPromoted: true
             });
 
@@ -437,7 +455,7 @@ export class GameEngine {
               pieceData: PieceData,
               to: undefined,
               from: lastEvent.from,
-              turn: lastEvent.turn
+              owner: lastEvent.turn
             });
             break;
           case "resign":
@@ -453,7 +471,7 @@ export class GameEngine {
               pieceData: PieceData,
               to: lastEvent.to,
               from: undefined,
-              turn: lastEvent.turn
+              owner: lastEvent.turn
             });
 
             this.turnChange(); // 駒を置くイベントのundoは手番も戻す必要があるため、ここで手番を戻す

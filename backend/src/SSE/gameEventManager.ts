@@ -1,6 +1,6 @@
-import { gameEventMessage } from "../types/APIType"; 
+import { gameEventMessageType } from "../types/APIType"; 
 
-type gameEventType = gameEventMessage["type"];
+type gameEventType = gameEventMessageType["type"];
 type eventSequence = gameEventType[];
 
 export class GameEventManager {
@@ -8,9 +8,6 @@ export class GameEventManager {
     ["captured", "move", "promoted"],
     ["move", "promoted"],
     ["resign"],
-    ["resetAll"],
-    ["undo"],
-    ["add"]
   ];
 
   private sequenceIndex: number | null = null;

@@ -1,10 +1,9 @@
-import { gameEventMessageType, ReturnGameEventMessageType , InitMessageType, RetutrnInitMessageType, ReturnReloadMessageType, editEventMessageType, ReturnEditEventMessageType } from "../types/APIType"
-import { url } from "../const/env";
+import { gameEventMessageType, ReturnGameEventMessageType , InitMessageType, RetutrnInitMessageType, ReturnReloadMessageType, editEventMessageType, ReturnEditEventMessageType } from "../types/APIType";
 
 export function ShogiAPI() {
     const sendInitEvent = async (initMessageType : InitMessageType) : Promise<RetutrnInitMessageType> => {
         try {
-            const res = await fetch("/init", {
+            const res = await fetch("/api/init", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
@@ -26,7 +25,7 @@ export function ShogiAPI() {
 
     const sendGameEvent = async (gameEventMessage : gameEventMessageType) : Promise<ReturnGameEventMessageType> => {
         try {
-            const res = await fetch("http://133.242.148.242:3000/gameEvent", {
+            const res = await fetch("/api/gameEvent", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -46,8 +45,8 @@ export function ShogiAPI() {
 
     const sendEditEvent = async (editEventMessage : editEventMessageType) : Promise<ReturnEditEventMessageType> => {
         try {
-            const res = await fetch("http://133.242.148.242:3000/edit", {
-            method: "GET",
+            const res = await fetch("/api/editEvent", {
+            method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
             body: JSON.stringify(editEventMessage)
@@ -66,7 +65,7 @@ export function ShogiAPI() {
 
     const sendReloadEvent = async () : Promise<ReturnReloadMessageType> => {
         try {
-            const res = await fetch("http://133.242.148.242:3000/reload", {
+            const res = await fetch("/api/reload", {
             method: "GET",
             headers: { "Content-Type": "application/json" },
             credentials: "include"

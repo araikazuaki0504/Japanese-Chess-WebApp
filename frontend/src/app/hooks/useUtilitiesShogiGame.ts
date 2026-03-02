@@ -6,11 +6,12 @@ import { User } from "../user/user";
 import { GameEngine } from "../game/gameEngine";
 
 import { PieceInstance } from "../const/initialBoard";
-import { capturedPieces } from "../types/gameType";
+import { capturedPieces, gameEventType } from "../types/gameType";
 import { RetutrnInitMessageType } from "../types/APIType";
 import { SSEMessageType } from "../types/SSE";
 import { ReturnGameEventMessageType, ReturnReloadMessageType } from "../types/APIType";
 import { ReturnEditEventMessageType } from "../types/APIType";
+import { editEventType } from "../types/editType";
 
 export function useUtilitiesShogiGame(setCurrentBoard : (currentBoard : ReadonlyArray<ReadonlyArray<PieceInstance>>) => void, 
                                          setMyselfCapturedPiece : (myselfCapturedPiece : ReadonlyArray<capturedPieces>) => void, 
@@ -34,20 +35,20 @@ export function useUtilitiesShogiGame(setCurrentBoard : (currentBoard : Readonly
 
     // SSEハンドラ
     const SSE_Handler = (message: MessageEvent) => {
-        const gameEvent : SSEMessageType = JSON.parse(message.data);
-        if (gameEvent.type !== "undo")gameEngine.ApplyReducer(gameEvent);
-        else gameEngine.undoApplyReducer(gameEvent);
+        const sseEvent : SSEMessageType = JSON.parse(message.data);
+        if (sseEvent.eventType === "operateEvent")gameEngine.ApplyReducer(sseEvent.event as gameEventType);
+        else gameEngine.ApplyEditReducer(sseEvent.event as editEventType[]);
 
         if (scheduledRef.current) return;
 
         scheduledRef.current = true;
         requestAnimationFrame(() => {
-        scheduledRef.current = false;
+            scheduledRef.current = false;
 
-        if (gameEngine.didUpdateBoard()) setCurrentBoard(gameEngine.getBoard());
-        if (gameEngine.didUpdateMyselfCapturedList()) setMyselfCapturedPiece(gameEngine.getMyselfCapturedList());
-        if (gameEngine.didUpdateOpponentCapturedList()) setOpponentCapturedPiece(gameEngine.getOpponentCapturedList());
-        setCurrentTurnState(gameEngine.getCurrentTurn());
+            if (gameEngine.didUpdateBoard()) setCurrentBoard(gameEngine.getBoard());
+            if (gameEngine.didUpdateMyselfCapturedList()) setMyselfCapturedPiece(gameEngine.getMyselfCapturedList());
+            if (gameEngine.didUpdateOpponentCapturedList()) setOpponentCapturedPiece(gameEngine.getOpponentCapturedList());
+            setCurrentTurnState(gameEngine.getCurrentTurn());
         
         });
     };
@@ -60,7 +61,7 @@ export function useUtilitiesShogiGame(setCurrentBoard : (currentBoard : Readonly
     const initalizeShogiGame = () => {
         // 初期化
         initShogiService().then((initData) => {
-          const es = new EventSource("http://133.242.148.242:3000/sse", { withCredentials: true });
+          const es = new EventSource("/api/sse", { withCredentials: true });
     
           setCurrentBoard(GameEngine.ligthBoardToBoard(initData.boardData));
           gameEngine.initSetBoard(initData.boardData);

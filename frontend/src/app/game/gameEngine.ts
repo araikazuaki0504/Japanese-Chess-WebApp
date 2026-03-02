@@ -4,6 +4,7 @@ import { moveType, PiecesType } from "../types/piecesInfoType";
 import { initialBoard, PieceInstance, lightPieceInstance, lightCapturedPieceData } from "../const/initialBoard";
 import { Blank,piecesData } from "../const/piecesData";
 import { User } from "../user/user";
+import { editEventType } from "../types/editType";
 
 export class GameEngine {
     private static instance: GameEngine;
@@ -39,6 +40,7 @@ export class GameEngine {
     }
 
     getCurrentTurn() : "Sente" | "Gote" {
+        this.didTurnUpdate = false;
         return this.currentTurn;
     }
 
@@ -100,8 +102,6 @@ export class GameEngine {
             };
         });
 
-        console.log(this.opponentcapturedPiecesList);
-
         this.didOpponentCapturedListUpdate = true;
     }
 
@@ -111,6 +111,7 @@ export class GameEngine {
 
     setCurrentTurn(currentTurn : "Sente" | "Gote") : void {
         this.currentTurn = currentTurn;
+        this.didTurnUpdate = true;
     }
 
     isMyTurn() : boolean {
@@ -184,6 +185,11 @@ export class GameEngine {
         newBoard[y][x] = { def: promotedPieceDef!, owner: owner};
 
         return newBoard;
+    }
+
+    capturedPiece(capturedPieceInfo : capturedPieceInfoType) : void {
+        if (capturedPieceInfo.owner === "Myself") this.myselfCapturedPiece(capturedPieceInfo);
+        else if (capturedPieceInfo.owner === "Opponent") this.opponentCapturedPiece(capturedPieceInfo);
     }
 
     myselfCapturedPiece(capturedPieceInfo : capturedPieceInfoType) : void {
@@ -267,7 +273,6 @@ export class GameEngine {
     }
 
     private undoMovePiece_ApplyBoard(undoBoard :PieceInstance[][], undoMovePieceInfo: unMovePieceInfoType) : PieceInstance[][] {
-        console.log("undo move piece info:", undoMovePieceInfo);
         const [fromX, fromY] = undoMovePieceInfo.from;
         const [toX, toY] = undoMovePieceInfo.to;
         const movePieceData = undoMovePieceInfo.pieceData;
@@ -298,8 +303,6 @@ export class GameEngine {
 
     undoCapturedPiece(undoCapturedPieceInfo : unCapturedPieceInfoType) : void {
         const whoOwner = this.user.changeOwner(undoCapturedPieceInfo.turn);
-        
-        console.log("undo captured piece info:", undoCapturedPieceInfo);
 
         this.board = this.undoCapturedPiece_ApplyBoard(this.board as PieceInstance[][], undoCapturedPieceInfo);
 
@@ -478,8 +481,6 @@ export class GameEngine {
     }
 
     ApplyReducer(reducer: gameEventType) : void {
-        if (reducer.userCode === this.user.getUserCode()) return;
-
         if (reducer.type === "error") return;
 
         if (reducer.isPromoted === false) { 
@@ -494,7 +495,7 @@ export class GameEngine {
             // 新しい盤面へ
             this.movePiece({
                 pieceData : reducer.pieceData,
-                owner : "Opponent",
+                owner : this.user.changeOwner(reducer.owner),
                 to : this.coordinateRotate180(reducer.to),
                 from : this.coordinateRotate180(reducer.from)
             });
@@ -509,7 +510,7 @@ export class GameEngine {
             // 新しい盤面へ
             this.promotedPiece({
                 pieceData : reducer.pieceData,
-                owner : "Opponent",
+                owner : this.user.changeOwner(reducer.owner),
                 at : this.coordinateRotate180(reducer.to),
                 isPromoted : true
             });
@@ -523,12 +524,12 @@ export class GameEngine {
          if (reducer.type === "captured" && reducer.from !== undefined && reducer.pieceData !== undefined) {
             const oldOpponentCapturedList = this.opponentcapturedPiecesList;
 
-            // 新しい相手の持ち駒リストへ
-            this.opponentCapturedPiece({
+            // 新しい持ち駒リストへ
+            this.capturedPiece({
                 pieceData : reducer.pieceData,
-                owner : "Opponent",
+                owner : this.user.changeOwner(reducer.owner),
                 at : this.coordinateRotate180(reducer.from)
-            });
+            })
 
             if (this.opponentcapturedPiecesList === oldOpponentCapturedList) this.didOpponentCapturedListUpdate = false;
         }
@@ -540,7 +541,7 @@ export class GameEngine {
 
             this.resignedPiece({
                 pieceData : reducer.pieceData,
-                owner : "Opponent",
+                owner : this.user.changeOwner(reducer.owner),
                 at : this.coordinateRotate180(reducer.to)
             });
 
@@ -549,35 +550,42 @@ export class GameEngine {
 
             this.turnChange();
         }
+    }
 
-        // 初期化
-        if (reducer.type === "resetAll") {
-            this.resetAll();
-        }
+    ApplyEditReducer(reducers : editEventType[]) : void {
+        for (const reducer of reducers){
+            // 初期化
+            if (reducer.type === "resetAll") {
+                this.resetAll();
+            }
 
-        // 任意の駒を追加
-        if (reducer.type === "add" && reducer.to !== undefined && reducer.pieceData !== undefined) {
-            const oldBoard = this.board;
+            // 任意の駒を追加
+            if (reducer.type === "edit-add" && reducer.to !== undefined && reducer.pieceData !== undefined) {
+                const oldBoard = this.board;
 
-            if (reducer.owner) {
                 this.addPiece({
                     pieceData : reducer.pieceData,
                     owner : reducer.owner,
                     at : this.coordinateRotate180(reducer.to)
                 });
-            } else {
+
+                if (this.board === oldBoard) this.didBoardUpdate = false;
+            } 
+
+            // 駒の削除
+            if (reducer.type === "edit-remove" && reducer.from !== undefined) {
                 this.removePiece({
-                    at: this.coordinateRotate180(reducer.to)
+                    at: this.coordinateRotate180(reducer.from)
                 });
             }
-             if (this.board === oldBoard) this.didBoardUpdate = false;
+
+            // 待った処理
+            if (reducer.type === "undo") this.undoApplyReducer(reducer);
         }
     }
 
-    undoApplyReducer(reducer: gameEventType) : void {
+    private undoApplyReducer(reducer: editEventType) : void {
         if (reducer.type !== "undo") return;
-
-        console.log("undo reducer:", reducer);
 
         if (reducer.to && reducer.from && reducer.pieceData) {
             this.undoMovePiece({

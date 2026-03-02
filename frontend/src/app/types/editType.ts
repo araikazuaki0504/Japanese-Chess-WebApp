@@ -1,7 +1,7 @@
 import { PiecesType } from "./piecesInfoType";
 
 export interface editEventType {
-    type: "resetAll" | "undo" | "add" | "error";
+    type: "resetAll" | "undo" | "edit-add" | "edit-remove" | "error";
     userCode: number;
     pieceData?: PiecesType;
     to? : [number, number];
@@ -16,12 +16,18 @@ export interface editEvenResulttType extends editEventType {
 
 export interface addPieceInfoType {
     pieceData: PiecesType;
-    owner? : "Sente" | "Gote";
+    owner : "Sente" | "Gote";
     at : [number, number];
 }
 
-export interface removeInfoType {
+export interface removePieceInfoType {
+    pieceData: PiecesType;
     at : [number, number];
+}
+
+export interface editPieceInfoType {
+    type : "add" | "remove";
+    info : addPieceInfoType | removePieceInfoType;
 }
 
 export interface unMovePieceInfoType {
