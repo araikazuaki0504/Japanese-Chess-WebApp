@@ -7,7 +7,7 @@ export interface gameEventType {
     to? : [number, number];
     from? : [number, number];
     isPromoted? : boolean;
-    turn? : "Sente" | "Gote";
+    owner : "Sente" | "Gote";
 }
 
 export interface gameEventResultType extends gameEventType{

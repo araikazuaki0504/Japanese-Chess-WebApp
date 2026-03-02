@@ -1,9 +1,10 @@
-import { gameEventMessageType, ReturnGameEventMessageType , InitMessageType, RetutrnInitMessageType, ReturnReloadMessageType } from "../types/APIType"
+import { gameEventMessageType, ReturnGameEventMessageType , InitMessageType, RetutrnInitMessageType, ReturnReloadMessageType, editEventMessageType, ReturnEditEventMessageType } from "../types/APIType"
+import { url } from "../const/env";
 
 export function ShogiAPI() {
     const sendInitEvent = async (initMessageType : InitMessageType) : Promise<RetutrnInitMessageType> => {
         try {
-            const res = await fetch("http://133.242.148.242:3000/init", {
+            const res = await fetch("/init", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
@@ -43,6 +44,26 @@ export function ShogiAPI() {
         }
     }
 
+    const sendEditEvent = async (editEventMessage : editEventMessageType) : Promise<ReturnEditEventMessageType> => {
+        try {
+            const res = await fetch("http://133.242.148.242:3000/edit", {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(editEventMessage)
+        });
+
+        const returnEditEventMessage : ReturnEditEventMessageType = await res.json();
+        // console.log(ReturnGameEventMessage);
+
+        return returnEditEventMessage;
+
+        } catch (err) {
+            console.error(err);
+            throw err; // ← await した側にエラーを伝播
+        }
+    }
+
     const sendReloadEvent = async () : Promise<ReturnReloadMessageType> => {
         try {
             const res = await fetch("http://133.242.148.242:3000/reload", {
@@ -62,5 +83,5 @@ export function ShogiAPI() {
         }
     }
 
-  return { sendInitEvent, sendGameEvent, sendReloadEvent };
+  return { sendInitEvent, sendGameEvent, sendEditEvent, sendReloadEvent };
 }

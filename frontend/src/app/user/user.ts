@@ -28,13 +28,17 @@ export class User {
         return this.userCode;
     }
 
-    changeOwner(currentTurn: "Sente" | "Gote") : "Myself" | "Opponent" {
+    getUserTeban() : "Sente" | "Gote" {
+        return this.userType === "Sente" ? "Sente" : "Gote";
+    }
+
+    changeOwner(currentTurn: "Sente" | "Gote" | "Spectator") : "Myself" | "Opponent" {
         if (this.userType === "Spectator" || this.userType === "Gote") 
             return currentTurn === "Gote" ? "Myself" : "Opponent";
         else return currentTurn === "Sente" ? "Myself" : "Opponent";
     }
 
-    changeOtherOwner(currentTurn: "Sente" | "Gote") : "Myself" | "Opponent" {
+    changeOtherOwner(currentTurn: "Sente" | "Gote" | "Spectator") : "Myself" | "Opponent" {
         if (this.userType === "Spectator" || this.userType === "Gote") 
             return currentTurn === "Sente" ? "Myself" : "Opponent";
         else return this.userType === "Sente" ? "Opponent" : "Myself";

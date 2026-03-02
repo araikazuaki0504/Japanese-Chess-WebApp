@@ -559,10 +559,10 @@ export class GameEngine {
         if (reducer.type === "add" && reducer.to !== undefined && reducer.pieceData !== undefined) {
             const oldBoard = this.board;
 
-            if (reducer.turn) {
+            if (reducer.owner) {
                 this.addPiece({
                     pieceData : reducer.pieceData,
-                    owner : reducer.turn,
+                    owner : reducer.owner,
                     at : this.coordinateRotate180(reducer.to)
                 });
             } else {
@@ -582,7 +582,7 @@ export class GameEngine {
         if (reducer.to && reducer.from && reducer.pieceData) {
             this.undoMovePiece({
                 pieceData : reducer.pieceData,
-                turn : reducer.turn!,
+                turn : reducer.owner!,
                 to : this.user.getUserType() === "Sente" ? this.coordinateRotate180(reducer.to) : reducer.to,
                 from : this.user.getUserType() === "Sente" ? this.coordinateRotate180(reducer.from) : reducer.from
             });
@@ -592,7 +592,7 @@ export class GameEngine {
         } else if (reducer.to && !reducer.from && reducer.pieceData && reducer.isPromoted) {
             this.undoPromotedPiece({
                 pieceData : reducer.pieceData,
-                turn : reducer.turn!,
+                turn : reducer.owner!,
                 at : this.user.getUserType() === "Sente" ? this.coordinateRotate180(reducer.to) : reducer.to
             });
 
@@ -600,14 +600,14 @@ export class GameEngine {
         } else if (!reducer.to && reducer.from && reducer.pieceData && !reducer.isPromoted) {
             this.undoCapturedPiece({
                 pieceData : reducer.pieceData,
-                turn : reducer.turn!,
+                turn : reducer.owner!,
                 at : this.user.getUserType() === "Sente" ? this.coordinateRotate180(reducer.from) : reducer.from
             });
             return;
         } else if (reducer.to && !reducer.from && reducer.pieceData && !reducer.isPromoted) {
             this.undoResignedPiece({
                 pieceData : reducer.pieceData,
-                turn : reducer.turn!,
+                turn : reducer.owner!,
                 at : this.user.getUserType() === "Sente" ? this.coordinateRotate180(reducer.to) : reducer.to
             });
 

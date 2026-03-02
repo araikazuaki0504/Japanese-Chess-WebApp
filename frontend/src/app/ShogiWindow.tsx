@@ -15,7 +15,7 @@ import { PiecesType } from "./types/piecesInfoType";
 import "./css/ShogiWindow.css";
 
 export default function ShogiWindow() {
-  const { currentBoard, currentTurn, myselfCapturedPiece, opponentCapturedPiece, movePiece, promotedPiece, resignedPiece, resetAll, undoPiece, addPiece } = useShogiGame();
+  const { currentBoard, myselfCapturedPiece, opponentCapturedPiece, currentTurn, movePiece, promotedPiece, resignedPiece, resetAll, undoPiece, editPiece } = useShogiGame();
   const user = User.getInstance();
   const resignedPieceData = useRef<PiecesType | null>(null);
   const addPieceData = useRef<PiecesType | null>(null);
@@ -38,7 +38,7 @@ export default function ShogiWindow() {
     if (!addPieceData.current) return;
     if (addPieceData == null) return;
 
-    addPiece({
+    editPiece({
       pieceData: addPieceData.current,
       owner: undefined,
       at: [x,y]
@@ -66,7 +66,7 @@ export default function ShogiWindow() {
 
     clickHistory.current = [x,y];
 
-    addPiece({
+    editPiece({
       pieceData: addPieceData.current,
       owner: pieceState.current,
       at: [x,y]

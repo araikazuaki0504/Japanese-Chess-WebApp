@@ -1,5 +1,6 @@
 import { gameEventType, gameEventResultType } from "./gameType";
-import { lightPieceInstance, lightCapturedPieceData  } from "../const/initialBoard"
+import { editEventType, editEvenResulttType } from "./editType";
+import { lightPieceInstance, lightCapturedPieceData } from "../const/initialBoard"
 
 export interface InitMessageType {
     type : "init";
@@ -26,3 +27,5 @@ export interface ReturnReloadMessageType {
 
 export type gameEventMessageType = gameEventType;
 export type ReturnGameEventMessageType = gameEventResultType;
+export type editEventMessageType = editEventType;
+export type ReturnEditEventMessageType = editEvenResulttType;
